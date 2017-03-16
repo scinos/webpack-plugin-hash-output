@@ -1,0 +1,10 @@
+{
+    "plugins": [
+        "mocha"
+    ],
+    "rules": {
+        // https://github.com/benmosher/eslint-plugin-import/blob/master/docs/rules/no-dynamic-require.md
+        // Allow dynamic require(), we use it in the tests
+        "import/no-dynamic-require": ["off"]
+    }
+}
