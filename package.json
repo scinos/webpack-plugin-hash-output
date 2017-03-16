@@ -25,5 +25,5 @@
   "peerDependencies": {
     "webpack-sources": "^0.1.0"
   },
-  "repository": "ssh://git@bitbucket.org/scinos/webpack-plugin-hash-output.git"
+  "repository": "https://bitbucket.org/scinos/webpack-plugin-hash-output"
 }

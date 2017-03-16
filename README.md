@@ -38,7 +38,7 @@ All other assets (common files, manifest files, HTML output...) will use the new
 
 Just add this plugin as usual.
 
-```
+```javascript
 // webpack.config.js
 var HashOutput = require('webpack-plugin-hash-output');
 
@@ -68,7 +68,7 @@ Note: If you are using `html-webpack-plugin`, you don't need to include the html
 
 Examples
 
-```
+```javascript
 module.exports = {
     entry: {
         entry1: './entry1.js',
