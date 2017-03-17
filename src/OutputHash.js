@@ -1,5 +1,6 @@
 const md5 = require('md5');
 const CachedSource = require('webpack-sources').CachedSource;
+const SourceMapSource = require('webpack-sources').SourceMapSource;
 
 function OutputHash({
     hashSize = 20,
@@ -41,9 +42,10 @@ function replaceHashes(chunk, assets, nameMap) {
         const newHash = nameMap[oldHash];
         if (asset instanceof CachedSource) {
             asset._cachedSource = asset.source().replace(oldHash, newHash);
+        } else if (asset instanceof SourceMapSource) {
+            asset._value = asset.source().replace(oldHash, newHash);
         } else {
             throw new Error('Unknown asset type!');
-            // asset._value = asset._value.replace(oldHash, newHash);
         }
     });
 }
