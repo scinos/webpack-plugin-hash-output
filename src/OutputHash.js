@@ -1,13 +1,18 @@
 const md5 = require('md5');
 const CachedSource = require('webpack-sources').CachedSource;
 const SourceMapSource = require('webpack-sources').SourceMapSource;
+const fs = require('fs');
 
 function OutputHash({
     hashSize = 20,
     manifestFiles = [],
+    validateOutput = false,
+    validateOutputRegex = /^.*$/,
 } = {}) {
     this.hashSize = hashSize;
     this.manifestFiles = manifestFiles;
+    this.validateOutput = validateOutput;
+    this.validateOutputRegex = validateOutputRegex;
 }
 
 function reHashChunk(chunk, assets) {
@@ -45,7 +50,7 @@ function replaceHashes(chunk, assets, nameMap) {
         } else if (asset instanceof SourceMapSource) {
             asset._value = asset.source().replace(oldHash, newHash);
         } else {
-            throw new Error('Unknown asset type!');
+            // throw new Error('Unknown asset type!');
         }
     });
 }
@@ -84,6 +89,23 @@ OutputHash.prototype.apply = function apply(compiler) {
             done();
         });
     });
+
+    if (this.validateOutput) {
+        compiler.plugin('after-emit', (compilation, callback) => {
+            Object.keys(compilation.assets)
+                .filter(assetName => assetName.match(this.validateOutputRegex))
+                .forEach((assetName) => {
+                    const asset = compilation.assets[assetName];
+                    const path = asset.existsAt;
+                    const assetContent = fs.readFileSync(path, 'utf8');
+                    const hashContent = md5(assetContent).substr(0, this.hashSize);
+                    if (!assetName.includes(hashContent)) {
+                        callback(new Error(`The hash in ${assetName} does not match the hash of the content (${hashContent})`));
+                    }
+                });
+            callback();
+        });
+    }
 };
 
 module.exports = OutputHash;

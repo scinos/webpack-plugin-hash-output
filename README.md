@@ -58,9 +58,13 @@ module.exports = {
 
 ### `options.hashSize`
 
-The prefix length of the hash to use, defaults to 20.
+`number`, defaults to `20`.
 
-### `options.manifestFiles=[]`
+The prefix length of the hash to use.
+
+### `options.manifestFiles`
+
+`string[]`, defaults to `[]`.
 
 Array of files that act like a manifest: files that has references to other files. You need to use this option if, for example, you are generating a common chunk or an external webpack manifest. In general, if a file references other files, it needs to be here.
 
@@ -83,6 +87,41 @@ module.exports = {
             // Because 'vendor' will contain the webpack manifest that references
             // other entry points
             manifestFiles: ['vendor']
+        }),
+    ]
+};
+```
+
+### `options.validateOutput`
+
+`boolean`, defaults to `false`.
+
+After webpack has compiled and generated all the assets, checks that the hash of the content is included in the file. If it is not, it will throw an error
+and the webpack process will fail.
+
+
+### `options.validateOutputRegex`
+`regex`, defaults to `/^.*$/`
+
+When validating the output (see `options.validateOutput`), only evaluate hashes for files matching this regexp. Example:
+
+```javascript
+module.exports = {
+    entry: {
+        main: './src/app.js',
+    },
+    output: {
+        filename: 'assets/[name].[chunkhash].js',
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            filename: 'fragments/app.html',
+            chunks: ['main'],
+        }),
+        new OutputHash({
+            validateOutput: true,
+            // Check that md5(assets/main.<hash>.js) === <hash>, but doesn't check fragments/app.html
+            validateOutputRegex: /^assets\/.*\.js$/,
         }),
     ]
 };
