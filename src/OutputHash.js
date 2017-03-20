@@ -50,7 +50,7 @@ function replaceHashes(chunk, assets, nameMap) {
         } else if (asset instanceof SourceMapSource) {
             asset._value = asset.source().replace(oldHash, newHash);
         } else {
-            // throw new Error('Unknown asset type!');
+            throw new Error('Unknown asset type!. Unfortunately this type of asset is not supported yet. Please raise an issue and we will look into it asap');
         }
     });
 }
