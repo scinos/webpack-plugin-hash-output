@@ -1,6 +1,4 @@
 const md5 = require('md5');
-const CachedSource = require('webpack-sources').CachedSource;
-const SourceMapSource = require('webpack-sources').SourceMapSource;
 const fs = require('fs');
 
 function OutputHash({
@@ -45,9 +43,10 @@ function replaceHashes(chunk, assets, nameMap) {
     // Replace references to the old chunk names with the new names
     Object.keys(nameMap).forEach((oldHash) => {
         const newHash = nameMap[oldHash];
-        if (asset instanceof CachedSource) {
+
+        if ('_cachedSource' in asset) {
             asset._cachedSource = asset.source().replace(oldHash, newHash);
-        } else if (asset instanceof SourceMapSource) {
+        } else if ('_value' in asset) {
             asset._value = asset.source().replace(oldHash, newHash);
         } else {
             throw new Error('Unknown asset type!. Unfortunately this type of asset is not supported yet. Please raise an issue and we will look into it asap');

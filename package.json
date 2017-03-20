@@ -22,9 +22,6 @@
   "dependencies": {
     "md5": "^2.2.1"
   },
-  "peerDependencies": {
-    "webpack-sources": "^0.1.0"
-  },
   "repository": {
     "type": "git",
     "url": "https://bitbucket.org/scinos/webpack-plugin-hash-output"
