@@ -25,5 +25,19 @@
   "peerDependencies": {
     "webpack-sources": "^0.1.0"
   },
-  "repository": "https://bitbucket.org/scinos/webpack-plugin-hash-output"
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/scinos/webpack-plugin-hash-output"
+  },
+  "keywords": [
+    "webpack",
+    "plugin",
+    "generate",
+    "asset",
+    "hash"
+  ],
+  "bugs": {
+    "url": "https://bitbucket.org/scinos/webpack-plugin-hash-output/issues"
+  },
+  "homepage": "https://bitbucket.org/scinos/webpack-plugin-hash-output"
 }
