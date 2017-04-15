@@ -71,12 +71,11 @@ OutputHash.prototype.apply = function apply(compiler) {
         // Webpack does not pass chunks and assets to any compilation step, but we need both.
         // To get them, we hook into 'optimize-chunk-assets' and save the chunks for processing
         // them later.
-        compilation.plugin('optimize-chunk-assets', (chunks, done) => {
+        compilation.plugin('after-optimize-chunk-assets', (chunks) => {
             this.chunks = chunks;
-            done();
         });
 
-        compilation.plugin('optimize-assets', (assets, done) => {
+        compilation.plugin('after-optimize-assets', (assets) => {
             const nameMap = {};
 
             this.chunks
@@ -96,8 +95,6 @@ OutputHash.prototype.apply = function apply(compiler) {
                     replaceHashes(chunk, assets, nameMap);
                     reHashChunk(chunk, assets, hashFn);
                 });
-
-            done();
         });
     });
 
