@@ -115,6 +115,20 @@ describe('OutputHash', () => {
         })
     )
 
+    it("Works with a complex uglified project", () => webpackCompile('manifest-uglify')
+        .then((stats) => {
+            expectAssetsNameToContainHash(stats);
+
+            const hashes = extractHashes(stats.compilation.assets, n => n[0]!=="manifest")
+            const commons = findAssetByName(stats.compilation.assets, "manifest");
+
+            expect(hashes).to.have.lengthOf(2);
+            hashes.forEach(hash => {
+                expect(commons.source()).to.contain(hash);
+            });
+        })
+    )
+
     it("Works with HTML output", () => webpackCompile('html')
         .then((stats) => {
             expectAssetsNameToContainHash(stats, name => name!=="index.html");
