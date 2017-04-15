@@ -17,11 +17,9 @@
     "eslint-plugin-import": "^2.2.0",
     "html-webpack-plugin": "^2.28.0",
     "mocha": "^3.2.0",
-    "webpack": "^2.2.1"
+    "webpack": "^2.4.1"
   },
-  "dependencies": {
-    "md5": "^2.2.1"
-  },
+  "dependencies": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/scinos/webpack-plugin-hash-output"

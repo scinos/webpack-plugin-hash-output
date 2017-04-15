@@ -1,28 +1,25 @@
-const md5 = require('md5');
+const crypto = require('crypto');
 const fs = require('fs');
 
 function OutputHash({
-    hashSize = 20,
     manifestFiles = [],
     validateOutput = false,
     validateOutputRegex = /^.*$/,
 } = {}) {
-    this.hashSize = hashSize;
     this.manifestFiles = manifestFiles;
     this.validateOutput = validateOutput;
     this.validateOutputRegex = validateOutputRegex;
 }
 
-function reHashChunk(chunk, assets) {
+function reHashChunk(chunk, assets, hashFn) {
     const oldHash = chunk.renderedHash;
     const oldChunkName = chunk.files[0];
     const asset = assets[oldChunkName];
-    const hash = md5(asset.source());
-    const shortHash = hash.substr(0, this.hashSize);
+    const { fullHash, shortHash } = hashFn(asset.source());
     const newChunkName = oldChunkName.replace(oldHash, shortHash);
 
     // Update the chunk with the new name
-    chunk.hash = hash;
+    chunk.hash = fullHash;
     chunk.renderedHash = shortHash;
     chunk.files[0] = newChunkName;
 
@@ -49,13 +46,28 @@ function replaceHashes(chunk, assets, nameMap) {
         } else if ('_value' in asset) {
             asset._value = asset.source().replace(oldHash, newHash);
         } else {
-            throw new Error('Unknown asset type!. Unfortunately this type of asset is not supported yet. Please raise an issue and we will look into it asap');
+            throw new Error(`Unknown asset type (${asset.constructor.name})!. ` +
+                'Unfortunately this type of asset is not supported yet. ' +
+                'Please raise an issue and we will look into it asap');
         }
     });
 }
 
 OutputHash.prototype.apply = function apply(compiler) {
+    let hashFn;
+
     compiler.plugin('compilation', (compilation) => {
+        const { outputOptions } = compilation;
+        const { hashFunction, hashDigest, hashDigestLength, hashSalt } = outputOptions;
+
+        // Reuses webpack options
+        hashFn = (input) => {
+            const hashObj = crypto.createHash(hashFunction).update(input);
+            if (hashSalt) hashObj.update(hashSalt);
+            const fullHash = hashObj.digest(hashDigest);
+            return { fullHash, shortHash: fullHash.substr(0, hashDigestLength) };
+        };
+
         // Webpack does not pass chunks and assets to any compilation step, but we need both.
         // To get them, we hook into 'optimize-chunk-assets' and save the chunks for processing
         // them later.
@@ -73,7 +85,7 @@ OutputHash.prototype.apply = function apply(compiler) {
                 // chunks.
                 .filter(chunk => !this.manifestFiles.includes(chunk.name))
                 .forEach((chunk) => {
-                    const { newHash, oldHash } = reHashChunk(chunk, assets);
+                    const { newHash, oldHash } = reHashChunk(chunk, assets, hashFn);
                     nameMap[oldHash] = newHash;
                 });
 
@@ -82,7 +94,7 @@ OutputHash.prototype.apply = function apply(compiler) {
                 .filter(chunk => this.manifestFiles.includes(chunk.name))
                 .forEach((chunk) => {
                     replaceHashes(chunk, assets, nameMap);
-                    reHashChunk(chunk, assets);
+                    reHashChunk(chunk, assets, hashFn);
                 });
 
             done();
@@ -91,18 +103,19 @@ OutputHash.prototype.apply = function apply(compiler) {
 
     if (this.validateOutput) {
         compiler.plugin('after-emit', (compilation, callback) => {
+            let err;
             Object.keys(compilation.assets)
                 .filter(assetName => assetName.match(this.validateOutputRegex))
                 .forEach((assetName) => {
                     const asset = compilation.assets[assetName];
                     const path = asset.existsAt;
                     const assetContent = fs.readFileSync(path, 'utf8');
-                    const hashContent = md5(assetContent).substr(0, this.hashSize);
-                    if (!assetName.includes(hashContent)) {
-                        callback(new Error(`The hash in ${assetName} does not match the hash of the content (${hashContent})`));
+                    const { shortHash } = hashFn(assetContent);
+                    if (!assetName.includes(shortHash)) {
+                        err = new Error(`The hash in ${assetName} does not match the hash of the content (${shortHash})`);
                     }
                 });
-            callback();
+            return callback(err);
         });
     }
 };
