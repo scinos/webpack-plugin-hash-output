@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://bitbucket.org/scinos/webpack-plugin-hash-output"
+    "url": "https://github.com/scinos/webpack-plugin-hash-output"
   },
   "keywords": [
     "webpack",
@@ -34,7 +34,7 @@
     "hash"
   ],
   "bugs": {
-    "url": "https://bitbucket.org/scinos/webpack-plugin-hash-output/issues"
+    "url": "https://github.com/scinos/webpack-plugin-hash-output/issues"
   },
-  "homepage": "https://bitbucket.org/scinos/webpack-plugin-hash-output"
+  "homepage": "https://github.com/scinos/webpack-plugin-hash-output"
 }
