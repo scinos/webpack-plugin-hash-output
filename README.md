@@ -1,6 +1,6 @@
 # webpack-plugin-hash-output
 
-https://travis-ci.org/scinos/webpack-plugin-hash-output.svg?branch=master
+[![Build Status](https://travis-ci.org/scinos/webpack-plugin-hash-output.svg?branch=master)](https://travis-ci.org/scinos/webpack-plugin-hash-output)
 
 Plugin to replace webpack chunkhash with an md5 hash of the final file conent.
 
