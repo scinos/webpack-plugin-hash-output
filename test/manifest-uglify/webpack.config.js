@@ -1,9 +1,9 @@
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 const OutputHash = require('../../src/OutputHash.js');
-const path = require("path");
+const path = require('path');
 const webpack = require('webpack');
 
-const rel = (paths => path.resolve(__dirname, ...paths))
+const rel = (paths => path.resolve(__dirname, ...paths));
 
 module.exports = {
     entry: {
@@ -16,12 +16,12 @@ module.exports = {
     },
     plugins: [
         new OutputHash({
-            manifestFiles: ['manifest']
+            manifestFiles: ['manifest'],
         }),
 
         new webpack.optimize.CommonsChunkPlugin({
-            name: ["vendor", "manifest"],
-            filename: "[name].[chunkhash].js",
+            name: ['vendor', 'manifest'],
+            filename: '[name].[chunkhash].js',
         }),
 
         new UglifyJSPlugin(),

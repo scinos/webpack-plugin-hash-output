@@ -5,7 +5,7 @@
   "main": "src/OutputHash.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "mocha --reporter spec test/*.js",
+    "test": "eslint . && mocha --reporter spec test/*.js",
     "clean": "rm -fr test/tmp"
   },
   "author": "Sergio Cinos <sergio.cinos@gmail.com>",

@@ -1,7 +1,7 @@
 const OutputHash = require('../../src/OutputHash.js');
-const path = require("path");
+const path = require('path');
 
-const rel = (paths => path.resolve(__dirname, ...paths))
+const rel = (paths => path.resolve(__dirname, ...paths));
 
 module.exports = {
     entry: {
