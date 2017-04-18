@@ -56,6 +56,48 @@ module.exports = {
 };
 ```
 
+## Sourcemap support
+
+This plugin partially supports sourcemaps. When a chunk hash is recomputed, it will update the name
+of the chunk in the chunks's sourcemap, but it won't recompute the name of the hash file. This has
+the side effect that the name of the sourcemap will differ from the name of the chunk. Example:
+
+Before:
+```javascript
+// app.<oldhash>.js
+
+// ...code...
+//# sourceMappingURL=entry.<oldhash>.js.map
+```
+
+```javascript
+// app.<oldhash>.js.map
+
+// ...
+"file":"app.<oldhash>.js"
+// ...
+```
+
+After:
+```javascript
+// app.<newhash>.js
+
+// ...code...
+//# sourceMappingURL=entry.<oldhash>.js.map
+```
+
+```javascript
+// app.<oldhash>.js.map
+
+// ...
+"file":"app.<newhash>.js"
+// ...
+```
+
+We can't fully support sourcemaps (i.e. recomute sourcemap hash) because the circular reference: we
+can't compute sourcemap hash without computing the file hash first, and we can't compute the file
+hash without the sourcemap hash.
+
 ## Options
 
 > Note: Use Webpack's own [hash output options](https://webpack.js.org/configuration/output/#output-hashfunction) to
@@ -63,7 +105,7 @@ module.exports = {
 
 ### `options.manifestFiles`
 
-`string[]`, defaults to `[]`.
+`(string|regexp)[]`, defaults to `[]`.
 
 Array of files that act like a manifest: files that has references to other files. You need to use this option if, for example, you are generating a common chunk or an external webpack manifest. In general, if a file references other files, it needs to be here.
 
@@ -78,14 +120,17 @@ module.exports = {
         entry2: './entry2.js',
         vendor: './vendor.js',
     },
+    devtool: 'sourcemap'
     plugins: [
         new webpack.optimize.CommonsChunkPlugin({
             name: "vendor",
         }),
         new OutputHash({
-            // Because 'vendor' will contain the webpack manifest that references
-            // other entry points
-            manifestFiles: ['vendor']
+            manifestFiles: [
+                // Because 'vendor' will contain the webpack manifest that references
+                // other entry points
+                'vendor'
+            ]
         }),
     ]
 };

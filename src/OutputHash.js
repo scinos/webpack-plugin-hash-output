@@ -11,6 +11,40 @@ function OutputHash({
     this.validateOutputRegex = validateOutputRegex;
 }
 
+/**
+ * Replaces a string in an asset
+ */
+function replaceStringInAsset(asset, source, target) {
+    if (typeof asset === 'string') {
+        return asset.replace(source, target);
+    }
+
+    if ('_cachedSource' in asset) {
+        asset._cachedSource = asset.source().replace(source, target);
+        return asset;
+    }
+
+    if ('_value' in asset) {
+        asset._value = asset.source().replace(source, target);
+        return asset;
+    }
+
+    if ('children' in asset) {
+        asset.children = asset.children.map(child => replaceStringInAsset(child, source, target));
+        return asset;
+    }
+
+    throw new Error(`Unknown asset type (${asset.constructor.name})!. ` +
+        'Unfortunately this type of asset is not supported yet. ' +
+        'Please raise an issue and we will look into it asap');
+}
+
+/**
+ * Computes the new hash of a chunk.
+ *
+ * This function updates the *name* of the main file (i.e. source code), and the *content* of the
+ * secondary files (i.e source maps)
+ */
 function reHashChunk(chunk, assets, hashFn) {
     const oldHash = chunk.renderedHash;
     const oldChunkName = chunk.files[0];
@@ -18,39 +52,26 @@ function reHashChunk(chunk, assets, hashFn) {
     const { fullHash, shortHash } = hashFn(asset.source());
     const newChunkName = oldChunkName.replace(oldHash, shortHash);
 
-    // Update the chunk with the new name
+    // Update the main file of the chunk with the new name
     chunk.hash = fullHash;
     chunk.renderedHash = shortHash;
     chunk.files[0] = newChunkName;
 
-    // Update the asset associated with that chunk
+    // Update the asset associated with that file
     asset._name = newChunkName;
     delete assets[oldChunkName];
     assets[newChunkName] = asset;
+
+    // Update the content of the rest of the files in the chunk
+    chunk.files.slice(1).forEach((file) => {
+        const secondaryAsset = assets[file];
+        replaceStringInAsset(secondaryAsset, oldHash, shortHash);
+    });
 
     return {
         oldHash,
         newHash: shortHash,
     };
-}
-
-function replaceHashes(chunk, assets, nameMap) {
-    const asset = assets[chunk.files[0]];
-
-    // Replace references to the old chunk names with the new names
-    Object.keys(nameMap).forEach((oldHash) => {
-        const newHash = nameMap[oldHash];
-
-        if ('_cachedSource' in asset) {
-            asset._cachedSource = asset.source().replace(oldHash, newHash);
-        } else if ('_value' in asset) {
-            asset._value = asset.source().replace(oldHash, newHash);
-        } else {
-            throw new Error(`Unknown asset type (${asset.constructor.name})!. ` +
-                'Unfortunately this type of asset is not supported yet. ' +
-                'Please raise an issue and we will look into it asap');
-        }
-    });
 }
 
 OutputHash.prototype.apply = function apply(compiler) {
@@ -78,21 +99,25 @@ OutputHash.prototype.apply = function apply(compiler) {
         compilation.plugin('after-optimize-assets', (assets) => {
             const nameMap = {};
 
+            // We assume that only the manifest chunk has references to all the other chunks.
+            // It needs to be processed at the end, when we know the new names of all the other
+            // chunks.
             this.chunks
-                // We assume that only the manifest chunk has references to all the other chunks.
-                // It needs to be processed at the end, when we know the new names of all the other
-                // chunks.
                 .filter(chunk => !this.manifestFiles.includes(chunk.name))
                 .forEach((chunk) => {
                     const { newHash, oldHash } = reHashChunk(chunk, assets, hashFn);
                     nameMap[oldHash] = newHash;
                 });
 
+            // After the main files have been rehashed, we need to update the content of the
+            // manifest files to point to the new rehashed names, and rehash them.
             this.chunks
-                // Now that we are done with all non-manifest chunks, process the manifest files
                 .filter(chunk => this.manifestFiles.includes(chunk.name))
                 .forEach((chunk) => {
-                    replaceHashes(chunk, assets, nameMap);
+                    chunk.files.forEach((file) => {
+                        Object.entries(nameMap).forEach(([oldHash, newHash]) =>
+                            replaceStringInAsset(assets[file], oldHash, newHash));
+                    });
                     reHashChunk(chunk, assets, hashFn);
                 });
         });
