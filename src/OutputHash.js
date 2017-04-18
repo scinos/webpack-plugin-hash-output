@@ -15,17 +15,19 @@ function OutputHash({
  * Replaces a string in an asset
  */
 function replaceStringInAsset(asset, source, target) {
+    const sourceRE = new RegExp(source, 'g');
+
     if (typeof asset === 'string') {
-        return asset.replace(source, target);
+        return asset.replace(sourceRE, target);
     }
 
     if ('_cachedSource' in asset) {
-        asset._cachedSource = asset.source().replace(source, target);
+        asset._cachedSource = asset.source().replace(sourceRE, target);
         return asset;
     }
 
     if ('_value' in asset) {
-        asset._value = asset.source().replace(source, target);
+        asset._value = asset.source().replace(sourceRE, target);
         return asset;
     }
 
