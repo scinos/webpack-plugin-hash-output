@@ -129,4 +129,23 @@ describe('OutputHash', () => {
                 expect(commons.source()).to.contain(hash);
             });
         }));
+
+    it('Works with sourcemaps', () => webpackCompile('sourcemap')
+        .then((stats) => {
+            const assets = stats.compilation.assets;
+
+            // New hash
+            expect(assets).to.have.property('entry.d36dd5d3312b77a32d66.js');
+
+            // Sourcemap still uses the old hash
+            expect(assets).to.have.property('entry.c72f41ea29f35ab86a6b.js.map');
+
+            // Source code still points to the old sourcemap
+            expect(assets['entry.d36dd5d3312b77a32d66.js'].source())
+                .to.contain('sourceMappingURL=entry.c72f41ea29f35ab86a6b.js.map');
+
+            // But sourcemaps has the name of the new source code file
+            expect(assets['entry.c72f41ea29f35ab86a6b.js.map'].source())
+                .to.contain('entry.d36dd5d3312b77a32d66.js');
+        }));
 });
