@@ -1,6 +1,6 @@
 {
   "name": "webpack-plugin-hash-output",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Plugin for Webpack that uses the final output to compute the hash of an asset",
   "main": "src/OutputHash.js",
   "scripts": {
