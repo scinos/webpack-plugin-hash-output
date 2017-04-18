@@ -1,8 +1,7 @@
 {
     "extends": "airbnb-base",
     "env": {
-        "node": true,
-        "mocha": true
+        "node": true
     },
     "rules": {
         // http://eslint.org/docs/rules/indent

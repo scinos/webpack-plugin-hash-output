@@ -130,7 +130,7 @@ describe('OutputHash', () => {
             });
         }));
 
-    it.only('Works with sourcemaps', () => webpackCompile('sourcemap')
+    it('Works with sourcemaps', () => webpackCompile('sourcemap')
         .then((stats) => {
             const assets = stats.compilation.assets;
 
