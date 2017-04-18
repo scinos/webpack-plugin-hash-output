@@ -115,8 +115,10 @@ OutputHash.prototype.apply = function apply(compiler) {
                 .filter(chunk => this.manifestFiles.includes(chunk.name))
                 .forEach((chunk) => {
                     chunk.files.forEach((file) => {
-                        Object.entries(nameMap).forEach(([oldHash, newHash]) =>
-                            replaceStringInAsset(assets[file], oldHash, newHash));
+                        Object.keys(nameMap).forEach((oldHash) => {
+                            const newHash = nameMap[oldHash];
+                            replaceStringInAsset(assets[file], oldHash, newHash);
+                        });
                     });
                     reHashChunk(chunk, assets, hashFn);
                 });
