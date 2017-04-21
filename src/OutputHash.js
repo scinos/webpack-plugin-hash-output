@@ -21,16 +21,25 @@ function replaceStringInAsset(asset, source, target) {
         return asset.replace(sourceRE, target);
     }
 
+    // ReplaceSource
+    if ('_source' in asset) {
+        asset._source = replaceStringInAsset(asset._source, source, target);
+        return asset;
+    }
+
+    // CachedSource
     if ('_cachedSource' in asset) {
         asset._cachedSource = asset.source().replace(sourceRE, target);
         return asset;
     }
 
+    // RawSource / SourceMapSource
     if ('_value' in asset) {
         asset._value = asset.source().replace(sourceRE, target);
         return asset;
     }
 
+    // ConcatSource
     if ('children' in asset) {
         asset.children = asset.children.map(child => replaceStringInAsset(child, source, target));
         return asset;
