@@ -139,7 +139,10 @@ OutputHash.prototype.apply = function apply(compiler) {
                     if (
                         !current.parents
                         || current.parents.length === 0
-                        || current.parents.every(p => chunksByDependency.indexOf(p) !== -1)
+                        || current.parents.every(p =>
+                            chunksByDependency.indexOf(p) !== -1
+                            || nonManifestChunks.indexOf(p) === -1
+                        )
                     ) {
                         chunksByDependency.push(current);
                         nonManifestChunks.splice(i, 1);

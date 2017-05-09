@@ -151,10 +151,11 @@ describe('OutputHash', () => {
 
     it('Works with code splitting', () => webpackCompile('code-split')
         .then((stats) => {
-            const assets = stats.compilation.assets;
+            const main = findAssetByName(stats.compilation.assets, 'main');
+            const onDemandChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
 
             // Source code uses new hash for on-demand chunk
-            expect(assets['main.69f369e6b3e71c6dd26e.js'].source())
-                .to.contain('7236d0ffabbdb3276859');
+            expect(main.source())
+                .to.contain(onDemandChunk.renderedHash);
         }));
 });
