@@ -125,24 +125,26 @@ OutputHash.prototype.apply = function apply(compiler) {
 
         compilation.plugin('after-optimize-assets', (assets) => {
             // Sort non-manifest chunks according to their parent dependencies.
-            const nonManifestChunks = this.chunks.filter(chunk => !this.manifestFiles.includes(chunk.name));
+            const nonManifestChunks = this.chunks.filter(
+                chunk => !this.manifestFiles.includes(chunk.name)
+            );
             const chunksByDependency = [];
 
-            while(nonManifestChunks.length) {
+            while (nonManifestChunks.length) {
                 let i = 0;
 
-                while(i < nonManifestChunks.length) {
+                while (i < nonManifestChunks.length) {
                     const current = nonManifestChunks[i];
 
                     if (
                         !current.parents
                         || current.parents.length === 0
-                        || current.parents.every(i => chunksByDependency.indexOf(i) !== -1)
+                        || current.parents.every(parent => chunksByDependency.indexOf(parent) !== -1)
                     ) {
                         chunksByDependency.push(current);
                         nonManifestChunks.splice(i, 1);
                     } else {
-                        i++;
+                        i += 1;
                     }
                 }
             }
