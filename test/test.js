@@ -148,4 +148,13 @@ describe('OutputHash', () => {
             expect(assets['entry.c72f41ea29f35ab86a6b.js.map'].source())
                 .to.contain('entry.d36dd5d3312b77a32d66.js');
         }));
+
+    it('Works with code splitting', () => webpackCompile('code-split')
+        .then((stats) => {
+            const assets = stats.compilation.assets;
+
+            // Source code uses new hash for on-demand chunk
+            expect(assets['main.69f369e6b3e71c6dd26e.js'].source())
+                .to.contain('7236d0ffabbdb3276859');
+        }));
 });
