@@ -148,4 +148,14 @@ describe('OutputHash', () => {
             expect(assets['entry.c72f41ea29f35ab86a6b.js.map'].source())
                 .to.contain('entry.d36dd5d3312b77a32d66.js');
         }));
+
+    it('Works with code splitting', () => webpackCompile('code-split')
+        .then((stats) => {
+            const main = findAssetByName(stats.compilation.assets, 'main');
+            const onDemandChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
+
+            // Source code uses new hash for on-demand chunk
+            expect(main.source())
+                .to.contain(onDemandChunk.renderedHash);
+        }));
 });
