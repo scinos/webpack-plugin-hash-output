@@ -136,6 +136,17 @@ module.exports = {
 };
 ```
 
+### `options.recalculateManifestFilesHash`
+
+`boolean`, defaults to `false`.
+
+In order to integrate this plugin with [webpack-subresource-integrity](https://github.com/waysact/webpack-subresource-integrity) plugin (or with any other plugin that might change manifest file output and must run in the last compilation step) without breaking **Long Term Caching** set this `true`.
+
+The problem is that [webpack-subresource-integrity](https://github.com/waysact/webpack-subresource-integrity) must be the last to run because it has to know the final hashes of the files.
+Then, it injects the calculated values into the manifest files.
+As a result, the filename which is an hash of the content isn't valid anymore.  
+Setting this option to true, makes the plugin recalculate the hashes of the manifest files at the emit phase which makes them valid again.
+
 ### `options.validateOutput`
 
 `boolean`, defaults to `false`.
