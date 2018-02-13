@@ -3,10 +3,12 @@ const fs = require('fs');
 
 function OutputHash({
     manifestFiles = [],
+    recalculateManifestFilesHash = false,
     validateOutput = false,
     validateOutputRegex = /^.*$/,
 } = {}) {
     this.manifestFiles = manifestFiles;
+    this.recalculateManifestFilesHash = recalculateManifestFilesHash;
     this.validateOutput = validateOutput;
     this.validateOutputRegex = validateOutputRegex;
 }
@@ -175,6 +177,17 @@ OutputHash.prototype.apply = function apply(compiler) {
                 });
         });
     });
+
+    if (this.recalculateManifestFilesHash) {
+        compiler.plugin('emit', (compilation, callback) => {
+            compilation.chunks
+                .filter(chunk => this.manifestFiles.includes(chunk.name))
+                .forEach((chunk) => {
+                    reHashChunk(chunk, compilation.assets, hashFn);
+                });
+            callback();
+        });
+    }
 
     if (this.validateOutput) {
         compiler.plugin('after-emit', (compilation, callback) => {
