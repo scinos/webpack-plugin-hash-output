@@ -58,7 +58,11 @@ function replaceStringInAsset(asset, source, target) {
  */
 function reHashChunk(chunk, assets, hashFn) {
     const oldHash = chunk.renderedHash;
-    const oldChunkName = chunk.files[0];
+    const oldChunkIndex = chunk.files.findIndex(function(el) { return el.endsWith('.js'); });
+    if (oldChunkIndex === -1) {
+        return {}; // update hashes of js files only
+    }
+    const oldChunkName = chunk.files[oldChunkIndex];
     const asset = assets[oldChunkName];
     const { fullHash, shortHash } = hashFn(asset.source());
     const newChunkName = oldChunkName.replace(oldHash, shortHash);
@@ -66,15 +70,18 @@ function reHashChunk(chunk, assets, hashFn) {
     // Update the main file of the chunk with the new name
     chunk.hash = fullHash;
     chunk.renderedHash = shortHash;
-    chunk.files[0] = newChunkName;
+    chunk.files[oldChunkIndex] = newChunkName;
 
     // Update the asset associated with that file
     asset._name = newChunkName;
     delete assets[oldChunkName];
     assets[newChunkName] = asset;
 
-    // Update the content of the rest of the files in the chunk
-    chunk.files.slice(1).forEach((file) => {
+    // Update the content of the rest of the files in the chunk - e.g. .map
+    chunk.files.forEach((file) => {
+        if (file.endsWith('.js')) {
+            return;
+        }
         const secondaryAsset = assets[file];
         replaceStringInAsset(secondaryAsset, oldHash, shortHash);
     });
@@ -162,7 +169,9 @@ OutputHash.prototype.apply = function apply(compiler) {
             chunksByDependencyDesc.forEach((chunk) => {
                 replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
                 const { newHash, oldHash } = reHashChunk(chunk, assets, hashFn);
-                nameMap[oldHash] = newHash;
+                if (newHash && oldHash) {
+                    nameMap[oldHash] = newHash;
+                }
             });
 
             // After the main files have been rehashed, we need to update the content of the
