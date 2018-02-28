@@ -1,6 +1,5 @@
 const OutputHash = require('../../src/OutputHash.js');
 const path = require('path');
-const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const rel = (paths => path.resolve(__dirname, ...paths));
@@ -17,11 +16,6 @@ module.exports = {
     plugins: [
         new OutputHash({
             manifestFiles: ['vendor'],
-        }),
-
-        new webpack.optimize.CommonsChunkPlugin({
-            name: 'vendor',
-            filename: '[name].[chunkhash].js',
         }),
 
         new HtmlWebpackPlugin({

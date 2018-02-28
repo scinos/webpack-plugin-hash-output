@@ -128,23 +128,28 @@ OutputHash.prototype.apply = function apply(compiler) {
             const nonManifestChunks = this.chunks.filter(
                 chunk => !this.manifestFiles.includes(chunk.name)
             );
+
             const chunksByDependency = [];
 
             while (nonManifestChunks.length) {
                 let i = 0;
 
                 while (i < nonManifestChunks.length) {
-                    const current = nonManifestChunks[i];
+                    const cur = nonManifestChunks[i];
+                    const parents = Array.from(cur.groupsIterable).reduce((acc, group) =>
+                        [...acc, ...group.getParents()], []
+                    );
 
-                    if (
-                        !current.parents
-                        || current.parents.length === 0
-                        || current.parents.every(p =>
-                            chunksByDependency.indexOf(p) !== -1
-                            || nonManifestChunks.indexOf(p) === -1
-                        )
-                    ) {
-                        chunksByDependency.push(current);
+                    const hasNoParent = !parents || parents.length === 0;
+                    const containsChunk = (chunkList, chunk) =>
+                        chunkList.map(c => String(c.id)).indexOf(String(chunk.id)) !== -1;
+
+                    const isParentAccountedFor = p =>
+                         containsChunk(chunksByDependency, p)
+                            || !containsChunk(nonManifestChunks, p);
+
+                    if (hasNoParent || parents.every(isParentAccountedFor)) {
+                        chunksByDependency.push(cur);
                         nonManifestChunks.splice(i, 1);
                     } else {
                         i += 1;
@@ -153,6 +158,7 @@ OutputHash.prototype.apply = function apply(compiler) {
             }
 
             const chunksByDependencyDesc = chunksByDependency.reverse();
+
             const nameMap = {};
 
             // We assume that only the manifest chunk has references to all the other chunks.

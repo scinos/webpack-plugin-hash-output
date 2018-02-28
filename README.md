@@ -35,6 +35,9 @@ MD5 (entry.32f1718dd08eccda2791.js) = 32f1718dd08eccda2791ff7ed466bd98
 
 All other assets (common files, manifest files, HTML output...) will use the new md5 hash to reference the asset.
 
+## Compatibility
+
+Requires webpack >=4
 
 ## Usage
 
@@ -122,9 +125,6 @@ module.exports = {
     },
     devtool: 'sourcemap'
     plugins: [
-        new webpack.optimize.CommonsChunkPlugin({
-            name: "vendor",
-        }),
         new OutputHash({
             manifestFiles: [
                 // Because 'vendor' will contain the webpack manifest that references
