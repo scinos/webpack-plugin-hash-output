@@ -131,6 +131,18 @@ describe('OutputHash', () => {
                         .to.contain(onDemandChunk.renderedHash);
                 }));
 
+            it('Works with runtime chunks', () => webpackCompile('runtime-chunks', mode)
+                .then((stats) => {
+                    const onDemandChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
+
+                    // Source code uses new hash for on-demand chunk
+                    const runtime1 = findAssetByName(stats.compilation.assets, 'runtime~entry1');
+                    const runtime2 = findAssetByName(stats.compilation.assets, 'runtime~entry1');
+                    expect(runtime1.source())
+                        .to.contain(onDemandChunk.renderedHash);
+                    expect(runtime2.source())
+                        .to.contain(onDemandChunk.renderedHash);
+                }));
 
             it('Works with sourcemaps', () => webpackCompile('sourcemap', mode)
                 .then((stats) => {

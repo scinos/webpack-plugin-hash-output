@@ -101,6 +101,15 @@ function replaceOldHashForNewInChunkFiles(chunk, assets, oldHashToNewHashMap) {
     });
 }
 
+function getParentChunks(chunkGroups) {
+    return chunkGroups.reduce((acc, group) =>
+        acc
+            .concat(group.chunks)
+            .concat(getParentChunks(group.getParents()))
+        , []
+    );
+}
+
 OutputHash.prototype.apply = function apply(compiler) {
     let hashFn;
 
@@ -135,9 +144,9 @@ OutputHash.prototype.apply = function apply(compiler) {
                 let i = 0;
 
                 while (i < nonManifestChunks.length) {
-                    const cur = nonManifestChunks[i];
-                    const parents = Array.from(cur.groupsIterable).reduce((acc, group) =>
-                        [...acc, ...group.getParents()], []
+                    const current = nonManifestChunks[i];
+                    const parents = Array.from(current.groupsIterable).reduce((acc, group) =>
+                        acc.concat(getParentChunks(group.getParents())), []
                     );
 
                     const hasNoParent = !parents || parents.length === 0;
@@ -149,7 +158,7 @@ OutputHash.prototype.apply = function apply(compiler) {
                             || !containsChunk(nonManifestChunks, p);
 
                     if (hasNoParent || parents.every(isParentAccountedFor)) {
-                        chunksByDependency.push(cur);
+                        chunksByDependency.push(current);
                         nonManifestChunks.splice(i, 1);
                     } else {
                         i += 1;
