@@ -104,7 +104,7 @@ function replaceOldHashForNewInChunkFiles(chunk, assets, oldHashToNewHashMap) {
 OutputHash.prototype.apply = function apply(compiler) {
     let hashFn;
 
-    compiler.plugin('compilation', (compilation) => {
+    compiler.hooks.compilation.tap('OutputHash', (compilation) => {
         const { outputOptions } = compilation;
         const { hashFunction, hashDigest, hashDigestLength, hashSalt } = outputOptions;
 
@@ -119,11 +119,11 @@ OutputHash.prototype.apply = function apply(compiler) {
         // Webpack does not pass chunks and assets to any compilation step, but we need both.
         // To get them, we hook into 'optimize-chunk-assets' and save the chunks for processing
         // them later.
-        compilation.plugin('after-optimize-chunk-assets', (chunks) => {
+        compilation.hooks.afterOptimizeChunkAssets.tap('Capture chunks', (chunks) => {
             this.chunks = chunks;
         });
 
-        compilation.plugin('after-optimize-assets', (assets) => {
+        compilation.hooks.afterOptimizeAssets.tap('Update chunks', (assets) => {
             // Sort non-manifest chunks according to their parent dependencies.
             const nonManifestChunks = this.chunks.filter(
                 chunk => !this.manifestFiles.includes(chunk.name)
@@ -135,10 +135,9 @@ OutputHash.prototype.apply = function apply(compiler) {
                 let i = 0;
 
                 while (i < nonManifestChunks.length) {
-                    const cur = nonManifestChunks[i];
-                    const parents = Array.from(cur.groupsIterable).reduce((acc, group) =>
-                        [...acc, ...group.getParents()], []
-                    );
+                    const currentChunk = nonManifestChunks[i];
+                    const parents = Array.from(currentChunk.groupsIterable)
+                        .reduce((acc, group) => acc.concat(group.getParents()), []);
 
                     const hasNoParent = !parents || parents.length === 0;
                     const containsChunk = (chunkList, chunk) =>
@@ -149,7 +148,7 @@ OutputHash.prototype.apply = function apply(compiler) {
                             || !containsChunk(nonManifestChunks, p);
 
                     if (hasNoParent || parents.every(isParentAccountedFor)) {
-                        chunksByDependency.push(cur);
+                        chunksByDependency.push(currentChunk);
                         nonManifestChunks.splice(i, 1);
                     } else {
                         i += 1;
@@ -183,7 +182,7 @@ OutputHash.prototype.apply = function apply(compiler) {
     });
 
     if (this.validateOutput) {
-        compiler.plugin('after-emit', (compilation, callback) => {
+        compiler.hooks.afterEmit.tapAsync('Validate output', (compilation, callback) => {
             let err;
             Object.keys(compilation.assets)
                 .filter(assetName => assetName.match(this.validateOutputRegex))

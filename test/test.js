@@ -55,20 +55,19 @@ const extractHashes = (assets, filter) => Object.keys(assets)
 describe('OutputHash', () => {
     const modes = ['development', 'production'];
 
-    beforeEach(() => {
+    before(() => {
         if (fs.existsSync('./test/tmp')) {
             rimraf.sync('./test/tmp');
         }
     });
 
     modes.forEach((mode) => {
-        context(`In ${mode}`, () => {
+        context(`In ${mode} mode`, () => {
             it('Works with single entry points', () => webpackCompile('one-asset', mode)
                 .then((stats) => {
                     expectAssetsNameToContainHash(stats);
                 }));
 
-            // Waiting on https://github.com/webpack/webpack/pull/4717
             it('Works with hashSalt', () => webpackCompile('one-asset-salt', mode)
                 .then((stats) => {
                     expectAssetsNameToContainHash(stats);
