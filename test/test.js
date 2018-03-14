@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const webpack = require('webpack');
 const path = require('path');
-const expect = require('chai').expect;
+const { expect } = require('chai');
 const rimraf = require('rimraf');
 const fs = require('fs');
 
@@ -140,20 +140,17 @@ describe('OutputHash', () => {
                     expectAssetsNameToContainHash(stats, asset => asset.indexOf('.map') === -1);
 
                     entryPointNames.forEach((entryPoint) => {
-                        const entryPointAssets = Object.keys(assets).filter(
-                            key => key.includes(entryPoint)
-                        );
+                        const entryPointAssets = Object.keys(assets)
+                            .filter(key => key.includes(entryPoint));
 
                         // We expect an asset file along with a single source map
                         expect(entryPointAssets.length).to.equal(2);
 
-                        const sourceMap = entryPointAssets.find(
-                            assetName => assetName.indexOf('.map') !== -1
-                        );
+                        const sourceMap = entryPointAssets
+                            .find(assetName => assetName.indexOf('.map') !== -1);
 
-                        const assetKey = entryPointAssets.find(
-                            assetName => assetName.indexOf('.map') === -1
-                        );
+                        const assetKey = entryPointAssets
+                            .find(assetName => assetName.indexOf('.map') === -1);
 
                         // Source code still points to the old sourcemap
                         expect(assets[assetKey].source())

@@ -118,7 +118,9 @@ OutputHash.prototype.apply = function apply(compiler) {
 
     compiler.hooks.compilation.tap('OutputHash', (compilation) => {
         const { outputOptions } = compilation;
-        const { hashFunction, hashDigest, hashDigestLength, hashSalt } = outputOptions;
+        const {
+            hashFunction, hashDigest, hashDigestLength, hashSalt,
+        } = outputOptions;
 
         // Reuses webpack options
         hashFn = (input) => {
@@ -137,9 +139,8 @@ OutputHash.prototype.apply = function apply(compiler) {
 
         compilation.hooks.afterOptimizeAssets.tap('Update chunks', (assets) => {
             // Sort non-manifest chunks according to their parent dependencies.
-            const nonManifestChunks = this.chunks.filter(
-                chunk => !this.manifestFiles.includes(chunk.name)
-            );
+            const nonManifestChunks = this.chunks.filter(chunk =>
+                !this.manifestFiles.includes(chunk.name));
 
             const chunksByDependency = [];
 
@@ -148,16 +149,15 @@ OutputHash.prototype.apply = function apply(compiler) {
 
                 while (i < nonManifestChunks.length) {
                     const currentChunk = nonManifestChunks[i];
-                    const parents = flatten(
-                        Array.from(currentChunk.groupsIterable).map(getAllParents)
-                    );
+                    const parents = flatten(Array.from(currentChunk.groupsIterable)
+                        .map(getAllParents));
 
                     const hasNoParent = !parents || parents.length === 0;
                     const containsChunk = (chunkList, chunk) =>
                         chunkList.map(c => String(c.id)).indexOf(String(chunk.id)) !== -1;
 
                     const isParentAccountedFor = p =>
-                         containsChunk(chunksByDependency, p)
+                        containsChunk(chunksByDependency, p)
                             || !containsChunk(nonManifestChunks, p);
 
                     if (hasNoParent || parents.every(isParentAccountedFor)) {
