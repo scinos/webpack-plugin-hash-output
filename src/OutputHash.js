@@ -101,6 +101,18 @@ function replaceOldHashForNewInChunkFiles(chunk, assets, oldHashToNewHashMap) {
     });
 }
 
+function flatten(arr) {
+    if (!Array.isArray(arr)) return arr;
+    return arr.reduce((acc, i) => acc.concat(flatten(i)), []);
+}
+
+function getAllParents(chunkGroup) {
+    return chunkGroup.getParents().map(parentGroup => [
+        ...parentGroup.chunks,
+        ...getAllParents(parentGroup),
+    ]);
+}
+
 OutputHash.prototype.apply = function apply(compiler) {
     let hashFn;
 
@@ -136,8 +148,9 @@ OutputHash.prototype.apply = function apply(compiler) {
 
                 while (i < nonManifestChunks.length) {
                     const currentChunk = nonManifestChunks[i];
-                    const parents = Array.from(currentChunk.groupsIterable)
-                        .reduce((acc, group) => acc.concat(group.getParents()), []);
+                    const parents = flatten(
+                        Array.from(currentChunk.groupsIterable).map(getAllParents)
+                    );
 
                     const hasNoParent = !parents || parents.length === 0;
                     const containsChunk = (chunkList, chunk) =>
