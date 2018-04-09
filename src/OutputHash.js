@@ -110,7 +110,7 @@ function getAllParents(chunkGroup, parents, visitedGroups) {
     if (visitedGroups.includes(chunkGroup)) return;
     visitedGroups.push(chunkGroup);
 
-    chunkGroup.getParents().forEach(parentGroup => {
+    chunkGroup.getParents().forEach((parentGroup) => {
         parents.push(parentGroup.chunks.filter(chunk => !parents.includes(chunk)));
         getAllParents(parentGroup, parents, visitedGroups);
     });
@@ -158,10 +158,10 @@ OutputHash.prototype.apply = function apply(compiler) {
 
                     // Get a list of all chunks that are parent of the currentChunk. A parent is
                     // a chunk that has to be loaded before currentChunk can be loaded.
-                    let parents = []
+                    let parents = [];
                     Array.from(currentChunk.groupsIterable)
                         .forEach(group => getAllParents(group, parents, []));
-                    parents = flatten(parents).filter(parent => parent != currentChunk);
+                    parents = flatten(parents).filter(parent => parent !== currentChunk);
 
                     const hasNoParent = !parents || parents.length === 0;
                     const containsChunk = (chunkList, chunk) =>

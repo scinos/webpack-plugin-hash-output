@@ -1,6 +1,5 @@
 const OutputHash = require('../../src/OutputHash.js');
 const path = require('path');
-const webpack = require('webpack');
 
 const rel = (paths => path.resolve(__dirname, ...paths));
 

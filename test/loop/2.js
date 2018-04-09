@@ -1,4 +1,5 @@
+/* global document */
 require.ensure([], (require) => {
     require('./1');
-    console.log('I am 2');
+    document.write('I am 2');
 });
