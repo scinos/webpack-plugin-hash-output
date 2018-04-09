@@ -106,11 +106,14 @@ function flatten(arr) {
     return arr.reduce((acc, i) => acc.concat(flatten(i)), []);
 }
 
-function getAllParents(chunkGroup) {
-    return chunkGroup.getParents().map(parentGroup => [
-        ...parentGroup.chunks,
-        ...getAllParents(parentGroup),
-    ]);
+function getAllParents(chunkGroup, parents, visitedGroups) {
+    if (visitedGroups.includes(chunkGroup)) return;
+    visitedGroups.push(chunkGroup);
+
+    chunkGroup.getParents().forEach(parentGroup => {
+        parents.push(parentGroup.chunks.filter(chunk => !parents.includes(chunk)));
+        getAllParents(parentGroup, parents, visitedGroups);
+    });
 }
 
 OutputHash.prototype.apply = function apply(compiler) {
@@ -133,8 +136,9 @@ OutputHash.prototype.apply = function apply(compiler) {
         // Webpack does not pass chunks and assets to any compilation step, but we need both.
         // To get them, we hook into 'optimize-chunk-assets' and save the chunks for processing
         // them later.
-        compilation.hooks.afterOptimizeChunkAssets.tap('Capture chunks', (chunks) => {
+        compilation.hooks.afterOptimizeChunks.tap('Capture chunks', (chunks, chunkGroups) => {
             this.chunks = chunks;
+            this.chunkGroups = chunkGroups;
         });
 
         compilation.hooks.afterOptimizeAssets.tap('Update chunks', (assets) => {
@@ -144,13 +148,20 @@ OutputHash.prototype.apply = function apply(compiler) {
 
             const chunksByDependency = [];
 
+            // Sort the chunks based on the graph depth (place leafs first, root of the tree
+            // latest)
             while (nonManifestChunks.length) {
                 let i = 0;
 
                 while (i < nonManifestChunks.length) {
                     const currentChunk = nonManifestChunks[i];
-                    const parents = flatten(Array.from(currentChunk.groupsIterable)
-                        .map(getAllParents));
+
+                    // Get a list of all chunks that are parent of the currentChunk. A parent is
+                    // a chunk that has to be loaded before currentChunk can be loaded.
+                    let parents = []
+                    Array.from(currentChunk.groupsIterable)
+                        .forEach(group => getAllParents(group, parents, []));
+                    parents = flatten(parents).filter(parent => parent != currentChunk);
 
                     const hasNoParent = !parents || parents.length === 0;
                     const containsChunk = (chunkList, chunk) =>

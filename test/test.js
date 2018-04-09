@@ -170,10 +170,15 @@ describe('OutputHash', () => {
                     const runtime1 = findAssetByName(stats.compilation.assets, 'runtime~entry1');
                     const runtime2 = findAssetByName(stats.compilation.assets, 'runtime~entry2');
 
-                    expect(runtime1.source())
-                        .to.contain(onDemandChunk.renderedHash);
-                    expect(runtime2.source())
-                        .to.contain(onDemandChunk.renderedHash);
+                }));
+
+            it('Works with async loops', () => webpackCompile('loop')
+                .then((stats) => {
+                    const entry = findAssetByName(stats.compilation.assets, 'entry');
+                    const asyncChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
+
+                    expectAssetsNameToContainHash(stats);
+                    expect(entry.source()).to.contain(asyncChunk.renderedHash);
                 }));
         });
     });
