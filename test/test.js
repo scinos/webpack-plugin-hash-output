@@ -123,11 +123,10 @@ describe('OutputHash', () => {
             it('Works with code splitting', () => webpackCompile('code-split', mode)
                 .then((stats) => {
                     const main = findAssetByName(stats.compilation.assets, 'main');
-                    const onDemandChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
+                    const asyncChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
 
-                    // Source code uses new hash for on-demand chunk
-                    expect(main.source())
-                        .to.contain(onDemandChunk.renderedHash);
+                    expectAssetsNameToContainHash(stats);
+                    expect(main.source()).to.contain(asyncChunk.renderedHash);
                 }));
 
 
@@ -143,33 +142,32 @@ describe('OutputHash', () => {
                         const entryPointAssets = Object.keys(assets)
                             .filter(key => key.includes(entryPoint));
 
-                        // We expect an asset file along with a single source map
-                        expect(entryPointAssets.length).to.equal(2);
-
                         const sourceMap = entryPointAssets
                             .find(assetName => assetName.indexOf('.map') !== -1);
 
                         const assetKey = entryPointAssets
                             .find(assetName => assetName.indexOf('.map') === -1);
 
+                        // We expect an asset file along with a single source map
+                        expect(entryPointAssets.length).to.equal(2);
+
                         // Source code still points to the old sourcemap
-                        expect(assets[assetKey].source())
-                            .to.contain(`sourceMappingURL=${sourceMap}`);
+                        expect(assets[assetKey].source()).to.contain(`sourceMappingURL=${sourceMap}`);
 
                         // But sourcemaps has the name of the new source code file
-                        expect(assets[sourceMap].source())
-                            .to.contain(assetKey);
+                        expect(assets[sourceMap].source()).to.contain(assetKey);
                     });
                 }));
 
             it('Works with runtime chunks', () => webpackCompile('runtime-chunks', mode)
                 .then((stats) => {
-                    const onDemandChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
-
-                    // Source code uses new hash for on-demand chunk
+                    const asyncChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
                     const runtime1 = findAssetByName(stats.compilation.assets, 'runtime~entry1');
                     const runtime2 = findAssetByName(stats.compilation.assets, 'runtime~entry2');
 
+                    expectAssetsNameToContainHash(stats);
+                    expect(runtime1.source()).to.contain(asyncChunk.renderedHash);
+                    expect(runtime2.source()).to.contain(asyncChunk.renderedHash);
                 }));
 
             it('Works with async loops', () => webpackCompile('loop')
