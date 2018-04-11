@@ -31,9 +31,7 @@ module.exports = {
         filename: '[name].[chunkhash].js',
     },
     plugins: [
-        new OutputHash({
-            manifestFiles: ['manifest'],
-        }),
+        new OutputHash(),
     ],
 };
 

@@ -2,11 +2,9 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 function OutputHash({
-    manifestFiles = [],
     validateOutput = false,
     validateOutputRegex = /^.*$/,
 } = {}) {
-    this.manifestFiles = manifestFiles;
     this.validateOutput = validateOutput;
     this.validateOutputRegex = validateOutputRegex;
 }
@@ -101,21 +99,6 @@ function replaceOldHashForNewInChunkFiles(chunk, assets, oldHashToNewHashMap) {
     });
 }
 
-function flatten(arr) {
-    if (!Array.isArray(arr)) return arr;
-    return arr.reduce((acc, i) => acc.concat(flatten(i)), []);
-}
-
-function getAllParents(chunkGroup, parents, visitedGroups) {
-    if (visitedGroups.includes(chunkGroup)) return;
-    visitedGroups.push(chunkGroup);
-
-    chunkGroup.getParents().forEach((parentGroup) => {
-        parents.push(parentGroup.chunks.filter(chunk => !parents.includes(chunk)));
-        getAllParents(parentGroup, parents, visitedGroups);
-    });
-}
-
 OutputHash.prototype.apply = function apply(compiler) {
     let hashFn;
 
@@ -142,66 +125,40 @@ OutputHash.prototype.apply = function apply(compiler) {
         });
 
         compilation.hooks.afterOptimizeAssets.tap('Update chunks', (assets) => {
-            // Sort non-manifest chunks according to their parent dependencies.
-            const nonManifestChunks = this.chunks.filter(chunk =>
-                !this.manifestFiles.includes(chunk.name));
-
-            const chunksByDependency = [];
-
-            // Sort the chunks based on the graph depth (place leafs first, root of the tree
-            // latest)
-            while (nonManifestChunks.length) {
-                let i = 0;
-
-                while (i < nonManifestChunks.length) {
-                    const currentChunk = nonManifestChunks[i];
-
-                    // Get a list of all chunks that are parent of the currentChunk. A parent is
-                    // a chunk that has to be loaded before currentChunk can be loaded.
-                    let parents = [];
-                    Array.from(currentChunk.groupsIterable)
-                        .forEach(group => getAllParents(group, parents, []));
-                    parents = flatten(parents).filter(parent => parent !== currentChunk);
-
-                    const hasNoParent = !parents || parents.length === 0;
-                    const containsChunk = (chunkList, chunk) =>
-                        chunkList.map(c => String(c.id)).indexOf(String(chunk.id)) !== -1;
-
-                    const isParentAccountedFor = p =>
-                        containsChunk(chunksByDependency, p)
-                            || !containsChunk(nonManifestChunks, p);
-
-                    if (hasNoParent || parents.every(isParentAccountedFor)) {
-                        chunksByDependency.push(currentChunk);
-                        nonManifestChunks.splice(i, 1);
-                    } else {
-                        i += 1;
-                    }
-                }
-            }
-
-            const chunksByDependencyDesc = chunksByDependency.reverse();
-
+            const sortedChunks = [];
+            const visitedGroups = [];
             const nameMap = {};
 
-            // We assume that only the manifest chunk has references to all the other chunks.
-            // It needs to be processed at the end, when we know the new names of all the other
-            // chunks. Non-manifest chunks are processed according to their references
-            // (most referenced -> least referenced).
-            chunksByDependencyDesc.forEach((chunk) => {
+            const extractInOrder = (group) => {
+                // Mark the group as processed
+                visitedGroups.push(group);
+
+                // For each child group, process it if it hasn't been processed before
+                group.getChildren().forEach((child) => {
+                    if (!visitedGroups.includes(child)) extractInOrder(child);
+                });
+
+                // For each chunk in this group
+                //   - Get all groups containing that chunk (that includes this group)
+                //   - If the group hasn't been processed yet, process it (this will skip current
+                //     group)
+                //   - After all groups containing the chunk have been processed, add the chunk to
+                //     the list of sortedChunks
+                group.chunks.forEach((chunk) => {
+                    Array.from(chunk.groupsIterable).forEach((parentGroup) => {
+                        if (!visitedGroups.includes(parentGroup)) extractInOrder(parentGroup);
+                    });
+                    if (!sortedChunks.includes(chunk)) sortedChunks.push(chunk);
+                });
+            };
+
+            this.chunkGroups.forEach(extractInOrder);
+
+            sortedChunks.forEach((chunk) => {
                 replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
                 const { newHash, oldHash } = reHashChunk(chunk, assets, hashFn);
                 nameMap[oldHash] = newHash;
             });
-
-            // After the main files have been rehashed, we need to update the content of the
-            // manifest files to point to the new rehashed names, and rehash them.
-            this.chunks
-                .filter(chunk => this.manifestFiles.includes(chunk.name))
-                .forEach((chunk) => {
-                    replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
-                    reHashChunk(chunk, assets, hashFn);
-                });
         });
     });
 

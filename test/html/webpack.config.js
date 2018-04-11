@@ -14,9 +14,7 @@ module.exports = {
         filename: '[name].[chunkhash].js',
     },
     plugins: [
-        new OutputHash({
-            manifestFiles: ['vendor'],
-        }),
+        new OutputHash(),
 
         new HtmlWebpackPlugin({
             filename: 'index.html',

@@ -88,6 +88,11 @@ describe('OutputHash', () => {
                     expectAssetsNameToContainHash(stats);
                 }));
 
+            it('Works with common chunks', () => webpackCompile('common-chunks', mode)
+                .then((stats) => {
+                    expectAssetsNameToContainHash(stats);
+                }));
+
             it('Works with manifest file', () => webpackCompile('manifest', mode)
                 .then((stats) => {
                     expectAssetsNameToContainHash(stats);
@@ -128,7 +133,6 @@ describe('OutputHash', () => {
                     expectAssetsNameToContainHash(stats);
                     expect(main.source()).to.contain(asyncChunk.renderedHash);
                 }));
-
 
             it('Works with sourcemaps', () => webpackCompile('sourcemap', mode)
                 .then((stats) => {
