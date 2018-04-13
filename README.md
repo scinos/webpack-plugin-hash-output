@@ -106,36 +106,6 @@ hash without the sourcemap hash.
 > Note: Use Webpack's own [hash output options](https://webpack.js.org/configuration/output/#output-hashfunction) to
   configure hash function and length.
 
-### `options.manifestFiles`
-
-`(string|regexp)[]`, defaults to `[]`.
-
-Array of files that act like a manifest: files that has references to other files. You need to use this option if, for example, you are generating a common chunk or an external webpack manifest. In general, if a file references other files, it needs to be here.
-
-Note: If you are using `html-webpack-plugin`, you don't need to include the html files here, they will be handled automatically.
-
-Examples
-
-```javascript
-module.exports = {
-    entry: {
-        entry1: './entry1.js',
-        entry2: './entry2.js',
-        vendor: './vendor.js',
-    },
-    devtool: 'sourcemap'
-    plugins: [
-        new OutputHash({
-            manifestFiles: [
-                // Because 'vendor' will contain the webpack manifest that references
-                // other entry points
-                'vendor'
-            ]
-        }),
-    ]
-};
-```
-
 ### `options.validateOutput`
 
 `boolean`, defaults to `false`.
