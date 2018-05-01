@@ -56,7 +56,12 @@ function replaceStringInAsset(asset, source, target) {
  */
 function reHashChunk(chunk, assets, hashFn) {
     const oldHash = chunk.renderedHash;
-    const oldChunkName = chunk.files[0];
+    const fileIndex = chunk.files.findIndex(file => file.endsWith('.js'));
+    if (fileIndex === -1) {
+        return {};
+    }
+
+    const oldChunkName = chunk.files[fileIndex];
     const asset = assets[oldChunkName];
     const { fullHash, shortHash } = hashFn(asset.source());
     const newChunkName = oldChunkName.replace(oldHash, shortHash);
@@ -64,7 +69,7 @@ function reHashChunk(chunk, assets, hashFn) {
     // Update the main file of the chunk with the new name
     chunk.hash = fullHash;
     chunk.renderedHash = shortHash;
-    chunk.files[0] = newChunkName;
+    chunk.files[fileIndex] = newChunkName;
 
     // Update the asset associated with that file
     asset._name = newChunkName;
@@ -72,10 +77,64 @@ function reHashChunk(chunk, assets, hashFn) {
     assets[newChunkName] = asset;
 
     // Update the content of the rest of the files in the chunk
-    chunk.files.slice(1).forEach((file) => {
-        const secondaryAsset = assets[file];
-        replaceStringInAsset(secondaryAsset, oldHash, shortHash);
-    });
+    chunk.files
+        .filter(file => file !== newChunkName)
+        .forEach((file) => {
+            const secondaryAsset = assets[file];
+            replaceStringInAsset(secondaryAsset, oldHash, shortHash);
+        });
+
+    return {
+        oldHash,
+        newHash: shortHash,
+    };
+}
+
+function getMiniCssContentHashKey(chunk) {
+    return Object.keys(chunk.contentHash).find(hashType => hashType.includes('/mini-css-extract-plugin/'));
+}
+
+/**
+ * Computes the new hash of a CssModule.
+ *
+ * This function updates the *name* of the main file (i.e. source code), and the *content* of the
+ * secondary files (i.e source maps)
+ */
+function reHashCssAsset(chunk, assets, hashFn) {
+    const cssModule = Array.from(chunk.modulesIterable).find(module => module.constructor.name === 'CssModule');
+    if (!cssModule) {
+        return {};
+    }
+
+    const miniCssKey = getMiniCssContentHashKey(chunk);
+    const oldHash = chunk.contentHash[miniCssKey];
+    const fileIndex = chunk.files.findIndex(asset => asset.match(oldHash));
+    if (fileIndex === -1) {
+        throw new Error('Asset file not found for CssModule hash.  Please use [contenthash] in MiniCssExtractPlugin placeholders.');
+    }
+
+    const oldName = chunk.files[fileIndex];
+    const asset = assets[oldName];
+    const { fullHash, shortHash } = hashFn(asset.source());
+    const newName = oldName.replace(oldHash, shortHash);
+
+    // Update the CssModule's associated file name / hash
+    cssModule.hash = fullHash;
+    cssModule.renderedHash = shortHash;
+    chunk.contentHash[miniCssKey] = shortHash;
+    chunk.files[fileIndex] = newName;
+
+    // Update the asset associated with that file
+    delete assets[oldName];
+    assets[newName] = asset;
+
+    // Update the content of the rest of the files in the chunk
+    chunk.files
+        .filter(file => file !== newName)
+        .forEach((file) => {
+            const secondaryAsset = assets[file];
+            replaceStringInAsset(secondaryAsset, oldHash, shortHash);
+        });
 
     return {
         oldHash,
@@ -153,6 +212,12 @@ OutputHash.prototype.apply = function apply(compiler) {
             };
 
             this.chunkGroups.forEach(extractInOrder);
+
+            sortedChunks.forEach((chunk) => {
+                replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
+                const { newHash, oldHash } = reHashCssAsset(chunk, assets, hashFn);
+                nameMap[oldHash] = newHash;
+            });
 
             sortedChunks.forEach((chunk) => {
                 replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);

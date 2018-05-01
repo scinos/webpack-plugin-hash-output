@@ -128,7 +128,7 @@ describe('OutputHash', () => {
             it('Works with code splitting', () => webpackCompile('code-split', mode)
                 .then((stats) => {
                     const main = findAssetByName(stats.compilation.assets, 'main');
-                    const asyncChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
+                    const asyncChunk = stats.compilation.chunks.filter(c => !c.name)[0];
 
                     expectAssetsNameToContainHash(stats);
                     expect(main.source()).to.contain(asyncChunk.renderedHash);
@@ -165,7 +165,7 @@ describe('OutputHash', () => {
 
             it('Works with runtime chunks', () => webpackCompile('runtime-chunks', mode)
                 .then((stats) => {
-                    const asyncChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
+                    const asyncChunk = stats.compilation.chunks.filter(c => !c.name)[0];
                     const runtime1 = findAssetByName(stats.compilation.assets, 'runtime~entry1');
                     const runtime2 = findAssetByName(stats.compilation.assets, 'runtime~entry2');
 
@@ -177,10 +177,22 @@ describe('OutputHash', () => {
             it('Works with async loops', () => webpackCompile('loop')
                 .then((stats) => {
                     const entry = findAssetByName(stats.compilation.assets, 'entry');
-                    const asyncChunk = stats.compilation.chunks.filter(c => c.name === null)[0];
+                    const asyncChunk = stats.compilation.chunks.filter(c => !c.name)[0];
 
                     expectAssetsNameToContainHash(stats);
                     expect(entry.source()).to.contain(asyncChunk.renderedHash);
+                }));
+
+            it('Works with mini-css-extract-plugin', () => webpackCompile('mini-css-chunks', mode)
+                .then((stats) => {
+                    expectAssetsNameToContainHash(stats);
+
+                    const runtime = findAssetByName(stats.compilation.assets, 'runtime~main');
+                    const asyncJs = stats.compilation.chunks.find(c => !c.name);
+                    const asyncCss = stats.compilation.modules.find(c => c.constructor.name === 'CssModule');
+
+                    expect(runtime.source()).to.contain(asyncJs.renderedHash);
+                    expect(runtime.source()).to.contain(asyncCss.renderedHash);
                 }));
         });
     });
