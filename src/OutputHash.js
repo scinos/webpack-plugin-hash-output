@@ -99,6 +99,12 @@ function replaceOldHashForNewInChunkFiles(chunk, assets, oldHashToNewHashMap) {
     });
 }
 
+function sortChunksById(a, b) {
+    if (a.id < b.id) return -1;
+    if (a.id > b.id) return 1;
+    return 0;
+}
+
 OutputHash.prototype.apply = function apply(compiler) {
     let hashFn;
 
@@ -125,34 +131,14 @@ OutputHash.prototype.apply = function apply(compiler) {
         });
 
         compilation.hooks.afterOptimizeAssets.tap('Update chunks', (assets) => {
-            const sortedChunks = [];
-            const visitedGroups = [];
             const nameMap = {};
-
-            const extractInOrder = (group) => {
-                // Mark the group as processed
-                visitedGroups.push(group);
-
-                // For each child group, process it if it hasn't been processed before
-                group.getChildren().forEach((child) => {
-                    if (!visitedGroups.includes(child)) extractInOrder(child);
-                });
-
-                // For each chunk in this group
-                //   - Get all groups containing that chunk (that includes this group)
-                //   - If the group hasn't been processed yet, process it (this will skip current
-                //     group)
-                //   - After all groups containing the chunk have been processed, add the chunk to
-                //     the list of sortedChunks
-                group.chunks.forEach((chunk) => {
-                    Array.from(chunk.groupsIterable).forEach((parentGroup) => {
-                        if (!visitedGroups.includes(parentGroup)) extractInOrder(parentGroup);
-                    });
-                    if (!sortedChunks.includes(chunk)) sortedChunks.push(chunk);
-                });
-            };
-
-            this.chunkGroups.forEach(extractInOrder);
+            const sortedChunks = compilation.chunks.slice().sort(((aChunk, bChunk) => {
+                const aEntry = aChunk.hasRuntime();
+                const bEntry = bChunk.hasRuntime();
+                if (aEntry && !bEntry) return 1;
+                if (!aEntry && bEntry) return -1;
+                return sortChunksById(aChunk, bChunk);
+            }));
 
             sortedChunks.forEach((chunk) => {
                 replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);

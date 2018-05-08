@@ -174,6 +174,15 @@ describe('OutputHash', () => {
                     expect(runtime2.source()).to.contain(asyncChunk.renderedHash);
                 }));
 
+            it('Works with shared runtime chunk', () => webpackCompile('shared-runtime-chunk', mode)
+                .then((stats) => {
+                    const asyncChunk = stats.compilation.chunks.find(c => c.name === 'async');
+                    const runtime = findAssetByName(stats.compilation.assets, 'runtime');
+
+                    expectAssetsNameToContainHash(stats);
+                    expect(runtime.source()).to.contain(asyncChunk.renderedHash);
+                }));
+
             it('Works with async loops', () => webpackCompile('loop')
                 .then((stats) => {
                     const entry = findAssetByName(stats.compilation.assets, 'entry');
