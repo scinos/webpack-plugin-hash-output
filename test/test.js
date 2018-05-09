@@ -131,6 +131,14 @@ describe('OutputHash', () => {
                     const asyncAsset = asset(stats, '0');
                     expect(entry.content).to.contain(asyncAsset.hash);
                 }));
+          
+            it('Works with shared runtime chunk', () => webpackCompile('shared-runtime-chunk', mode)
+                .then(sanityCheck)               
+                .then((stats) => {
+                    const asyncChunk = asset(stats, 'async');
+                    const runtime = asset(stats, 'runtime');
+                    expect(runtime.content).to.contain(asyncChunk.hash);
+                }));
 
             it('Works with HTML output', () => webpackCompile('html', mode)
                 .then(sanityCheck)
