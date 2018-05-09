@@ -4,5 +4,6 @@
       "editor.rulers": [
             100
       ],
-      "eslint.enable": true
+      "eslint.enable": true,
+      "eslint.autoFixOnSave": true
 }

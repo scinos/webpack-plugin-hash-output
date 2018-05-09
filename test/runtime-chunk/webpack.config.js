@@ -4,6 +4,7 @@ const path = require('path');
 const rel = (paths => path.resolve(__dirname, ...paths));
 
 module.exports = {
+    devtool: 'sourcemap',
     entry: {
         entry1: rel`./entry-1.js`,
         entry2: rel`./entry-2.js`,
