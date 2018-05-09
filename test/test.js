@@ -34,8 +34,8 @@ const expectAssetNameToContainContentHash = (stats) => {
 const expectSourcemapsToBeCorrect = (stats) => {
     const { assets } = stats.compilation;
 
-    const sourcemaps = Object.entries(assets).filter(([name]) => name.endsWith('.map'));
-    sourcemaps.forEach(([name, content]) => {
+    Object.keys(assets).filter(name => name.endsWith('.map')).forEach((name) => {
+        const content = assets[name];
         const linkedFile = JSON.parse(content.source()).file;
         expect(Object.keys(assets)).to.include(linkedFile);
         expect(assets[linkedFile].source()).to.have.string(name);
@@ -60,8 +60,9 @@ const webpackCompile = (fixture, mode) => new Promise((resolve, reject) => {
 });
 
 const asset = (stats, name, ext = '.js') => {
-    const [assetName, content] = Object.entries(stats.compilation.assets)
-        .find(([n]) => n.startsWith(name) && n.endsWith(ext));
+    const assetName = Object.keys(stats.compilation.assets)
+        .find(n => n.startsWith(name) && n.endsWith(ext));
+    const content = stats.compilation.assets[assetName];
     return {
         hash: assetName.split('.')[1], // By convention the names are <name>.<hash>.<extension>
         content: content.source(),
