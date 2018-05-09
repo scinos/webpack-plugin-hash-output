@@ -124,16 +124,16 @@ describe('OutputHash', () => {
                     expect(manifest.content).to.contain(asyncAsset.hash);
                 }));
 
-            it('Works when there are two async files requiring each other', () => webpackCompile('loop')
+            it('Works when there are two async files requiring each other', () => webpackCompile('loop', mode)
                 .then(sanityCheck)
                 .then((stats) => {
                     const entry = asset(stats, 'entry');
                     const asyncAsset = asset(stats, '0');
                     expect(entry.content).to.contain(asyncAsset.hash);
                 }));
-          
+
             it('Works with shared runtime chunk', () => webpackCompile('shared-runtime-chunk', mode)
-                .then(sanityCheck)               
+                .then(sanityCheck)
                 .then((stats) => {
                     const asyncChunk = asset(stats, 'async');
                     const runtime = asset(stats, 'runtime');
