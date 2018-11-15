@@ -146,8 +146,10 @@ function sortChunksById(a, b) {
 OutputHash.prototype.apply = function apply(compiler) {
     let hashFn;
 
-    compiler.hooks.compilation.tap('OutputHash', (compilation) => {
-        const { outputOptions } = compilation;
+    compiler.hooks.emit.tapAsync('OutputHash', (compilation, callback) => {
+        const {
+            outputOptions, chunks, assets,
+        } = compilation;
         const {
             hashFunction, hashDigest, hashDigestLength, hashSalt,
         } = outputOptions;
@@ -160,29 +162,21 @@ OutputHash.prototype.apply = function apply(compiler) {
             return { fullHash, shortHash: fullHash.substr(0, hashDigestLength) };
         };
 
-        // Webpack does not pass chunks and assets to any compilation step, but we need both.
-        // To get them, we hook into 'optimize-chunk-assets' and save the chunks for processing
-        // them later.
-        compilation.hooks.afterOptimizeChunks.tap('Capture chunks', (chunks, chunkGroups) => {
-            this.chunks = chunks;
-            this.chunkGroups = chunkGroups;
+        const nameMap = {};
+        const sortedChunks = chunks.slice().sort(((aChunk, bChunk) => {
+            const aEntry = aChunk.hasRuntime();
+            const bEntry = bChunk.hasRuntime();
+            if (aEntry && !bEntry) return 1;
+            if (!aEntry && bEntry) return -1;
+            return sortChunksById(aChunk, bChunk);
+        }));
+
+        sortedChunks.forEach((chunk) => {
+            replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
+            reHashChunk(chunk, assets, hashFn, nameMap);
         });
 
-        compilation.hooks.afterOptimizeAssets.tap('Update chunks', (assets) => {
-            const nameMap = {};
-            const sortedChunks = compilation.chunks.slice().sort(((aChunk, bChunk) => {
-                const aEntry = aChunk.hasRuntime();
-                const bEntry = bChunk.hasRuntime();
-                if (aEntry && !bEntry) return 1;
-                if (!aEntry && bEntry) return -1;
-                return sortChunksById(aChunk, bChunk);
-            }));
-
-            sortedChunks.forEach((chunk) => {
-                replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
-                reHashChunk(chunk, assets, hashFn, nameMap);
-            });
-        });
+        callback();
     });
 
     if (this.validateOutput) {
