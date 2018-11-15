@@ -104,8 +104,8 @@ function replaceOldHashForNewInChunkFiles(chunk, assets, oldHashToNewHashMap) {
 OutputHash.prototype.apply = function apply(compiler) {
     let hashFn;
 
-    compiler.plugin('compilation', (compilation) => {
-        const { outputOptions } = compilation;
+    compiler.plugin('emit', (compilation, callback) => {
+        const { outputOptions, chunks, assets } = compilation;
         const { hashFunction, hashDigest, hashDigestLength, hashSalt } = outputOptions;
 
         // Reuses webpack options
@@ -116,64 +116,55 @@ OutputHash.prototype.apply = function apply(compiler) {
             return { fullHash, shortHash: fullHash.substr(0, hashDigestLength) };
         };
 
-        // Webpack does not pass chunks and assets to any compilation step, but we need both.
-        // To get them, we hook into 'optimize-chunk-assets' and save the chunks for processing
-        // them later.
-        compilation.plugin('after-optimize-chunk-assets', (chunks) => {
-            this.chunks = chunks;
-        });
+        const nonManifestChunks = chunks.filter(
+            chunk => !this.manifestFiles.includes(chunk.name)
+        );
+        const chunksByDependency = [];
 
-        compilation.plugin('after-optimize-assets', (assets) => {
-            // Sort non-manifest chunks according to their parent dependencies.
-            const nonManifestChunks = this.chunks.filter(
-                chunk => !this.manifestFiles.includes(chunk.name)
-            );
-            const chunksByDependency = [];
+        while (nonManifestChunks.length) {
+            let i = 0;
 
-            while (nonManifestChunks.length) {
-                let i = 0;
+            while (i < nonManifestChunks.length) {
+                const current = nonManifestChunks[i];
 
-                while (i < nonManifestChunks.length) {
-                    const current = nonManifestChunks[i];
-
-                    if (
-                        !current.parents
-                        || current.parents.length === 0
-                        || current.parents.every(p =>
-                            chunksByDependency.indexOf(p) !== -1
-                            || nonManifestChunks.indexOf(p) === -1
-                        )
-                    ) {
-                        chunksByDependency.push(current);
-                        nonManifestChunks.splice(i, 1);
-                    } else {
-                        i += 1;
-                    }
+                if (
+                    !current.parents
+                    || current.parents.length === 0
+                    || current.parents.every(p =>
+                        chunksByDependency.indexOf(p) !== -1
+                        || nonManifestChunks.indexOf(p) === -1
+                    )
+                ) {
+                    chunksByDependency.push(current);
+                    nonManifestChunks.splice(i, 1);
+                } else {
+                    i += 1;
                 }
             }
+        }
 
-            const chunksByDependencyDesc = chunksByDependency.reverse();
-            const nameMap = {};
+        const chunksByDependencyDesc = chunksByDependency.reverse();
+        const nameMap = {};
 
-            // We assume that only the manifest chunk has references to all the other chunks.
-            // It needs to be processed at the end, when we know the new names of all the other
-            // chunks. Non-manifest chunks are processed according to their references
-            // (most referenced -> least referenced).
-            chunksByDependencyDesc.forEach((chunk) => {
-                replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
-                const { newHash, oldHash } = reHashChunk(chunk, assets, hashFn);
-                nameMap[oldHash] = newHash;
-            });
-
-            // After the main files have been rehashed, we need to update the content of the
-            // manifest files to point to the new rehashed names, and rehash them.
-            this.chunks
-                .filter(chunk => this.manifestFiles.includes(chunk.name))
-                .forEach((chunk) => {
-                    replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
-                    reHashChunk(chunk, assets, hashFn);
-                });
+        // We assume that only the manifest chunk has references to all the other chunks.
+        // It needs to be processed at the end, when we know the new names of all the other
+        // chunks. Non-manifest chunks are processed according to their references
+        // (most referenced -> least referenced).
+        chunksByDependencyDesc.forEach((chunk) => {
+            replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
+            const { newHash, oldHash } = reHashChunk(chunk, assets, hashFn);
+            nameMap[oldHash] = newHash;
         });
+
+        // After the main files have been rehashed, we need to update the content of the
+        // manifest files to point to the new rehashed names, and rehash them.
+        chunks
+            .filter(chunk => this.manifestFiles.includes(chunk.name))
+            .forEach((chunk) => {
+                replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
+                reHashChunk(chunk, assets, hashFn);
+            });
+        callback();
     });
 
     if (this.validateOutput) {
