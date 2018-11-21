@@ -45,7 +45,7 @@ Just add this plugin as usual.
 
 ```javascript
 // webpack.config.js
-var HashOutput = require('webpack-plugin-hash-output');
+const HashOutput = require('webpack-plugin-hash-output');
 
 module.exports = {
     // ...
@@ -133,7 +133,7 @@ module.exports = {
             filename: 'fragments/app.html',
             chunks: ['main'],
         }),
-        new OutputHash({
+        new HashOutput({
             validateOutput: true,
             // Check that md5(assets/main.<hash>.js) === <hash>, but doesn't check fragments/app.html
             validateOutputRegex: /^assets\/.*\.js$/,
