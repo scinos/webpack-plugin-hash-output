@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 3.1.2 - 2018-11-23
+
+### Chores
+
+- Updated chai to 4.2.0
+- Updated css-loader to 1.0.1
+- Updated eslint to 5.9.0
+- Updated eslint-config-airbnb-base to 13.1.0
+- Updated eslint-plugin-import to 2.14.0
+- Updated eslint-plugin-mocha to 5.2.0
+- Updated mini-css-extract-plugin to 0.4.5
+- Updated mocha to 5.2.0
+- Updated webpack to 4.26.0
+- Updated webpack-cli to 3.1.2
+- Updated node to 6.14.4
+- Added prettier
+- Changed the code style of many files to conform to prettier
+- Added base webpack config to tests to avoid some duplication
+- Added LICENSE.txt, CODE_OF_CONDUCT.md
+- Added .npmignore to reduce the package size
+
 ## 3.1.1 - 2018-11-16
 
 ### Fixes
@@ -20,29 +41,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## 3.1.0 - 2017-05-09
 
 ### Added
-- Added support for mini-css-extract-plugin. (#17, thanks to @GoodForOneFare)
+ - Added support for mini-css-extract-plugin. (#17, thanks to @GoodForOneFare)
 
 ### Changed
-- Simplified logic for sorting chunks before hashing. (#18, thanks to @GoodForOneFare)
+ - Simplified logic for sorting chunks before hashing. (#18, thanks to @GoodForOneFare)
 
 
 ## 3.0.0 - 2017-04-14
 
 ### Changed
-- Reworked algorithm to detect file dependencies to avoid #16. This new algorithm makes the option
+ - Reworked algorithm to detect file dependencies to avoid #16. This new algorithm makes the option
   `manifestFiles` unnecessary.
 
 ### Fixed
-- Fixes bug causing an infinite loop in some projects (#16)
+ - Fixes bug causing an infinite loop in some projects (#16)
 
 ### Removed
-- Option `manifestFiles` has been removed. The plugin will find all manifest files automatically.
+ - Option `manifestFiles` has been removed. The plugin will find all manifest files automatically.
 
 
 ## 2.1.0 - 2017-04-09
 
 ### Added
-- Support for circular async dependencies (#15)
+ - Support for circular async dependencies (#15)
 
 
 ## 2.0.0 - 2017-03-15

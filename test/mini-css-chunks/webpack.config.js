@@ -1,10 +1,11 @@
 const OutputHash = require('../../src/OutputHash.js');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const path = require('path');
+const baseConfig = require('../base.webpack.config');
 
-const rel = (paths => path.resolve(__dirname, ...paths));
+const rel = paths => path.resolve(__dirname, ...paths);
 
-module.exports = {
+module.exports = Object.assign({}, baseConfig, {
     entry: rel`./entry.js`,
     devtool: 'sourcemap',
     module: {
@@ -24,13 +25,9 @@ module.exports = {
             },
         ],
     },
-    optimization: {
+    optimization: Object.assign({}, baseConfig.optimization, {
         runtimeChunk: true,
-    },
-    output: {
-        path: rel`../tmp`,
-        filename: '[name].[chunkhash].js',
-    },
+    }),
     plugins: [
         new OutputHash(),
         new MiniCssExtractPlugin({
@@ -38,4 +35,4 @@ module.exports = {
             chunkFilename: '[id].[contenthash].css',
         }),
     ],
-};
+});

@@ -1,10 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 
-function OutputHash({
-    validateOutput = false,
-    validateOutputRegex = /^.*$/,
-} = {}) {
+function OutputHash({ validateOutput = false, validateOutputRegex = /^.*$/ } = {}) {
     this.validateOutput = validateOutput;
     this.validateOutputRegex = validateOutputRegex;
 }
@@ -43,9 +40,11 @@ function replaceStringInAsset(asset, source, target) {
         return asset;
     }
 
-    throw new Error(`Unknown asset type (${asset.constructor.name})!. ` +
-        'Unfortunately this type of asset is not supported yet. ' +
-        'Please raise an issue and we will look into it asap');
+    throw new Error(
+        `Unknown asset type (${asset.constructor.name})!. ` +
+            'Unfortunately this type of asset is not supported yet. ' +
+            'Please raise an issue and we will look into it asap'
+    );
 }
 
 /**
@@ -58,63 +57,62 @@ function reHashChunk(chunk, assets, hashFn, nameMap) {
     const isMainFile = file => file.endsWith('.js') || file.endsWith('.css');
 
     // Update the name of the main files
-    chunk.files
-        .filter(isMainFile)
-        .forEach((file, index) => {
-            const oldChunkName = chunk.files[index];
-            const asset = assets[oldChunkName];
-            const { fullHash, shortHash: newHash } = hashFn(asset.source());
+    chunk.files.filter(isMainFile).forEach((file, index) => {
+        const oldChunkName = chunk.files[index];
+        const asset = assets[oldChunkName];
+        const { fullHash, shortHash: newHash } = hashFn(asset.source());
 
-            let newChunkName;
+        let newChunkName;
 
-            if (oldChunkName.includes(chunk.renderedHash)) {
-                // Save the hash map for replacing the secondary files
-                nameMap[chunk.renderedHash] = newHash;
-                newChunkName = oldChunkName.replace(chunk.renderedHash, newHash);
+        if (oldChunkName.includes(chunk.renderedHash)) {
+            // Save the hash map for replacing the secondary files
+            nameMap[chunk.renderedHash] = newHash;
+            newChunkName = oldChunkName.replace(chunk.renderedHash, newHash);
 
-                // Keep the chunk hashes in sync
-                chunk.hash = fullHash;
-                chunk.renderedHash = newHash;
-            } else {
-                // This is a massive hack:
-                //
-                // The oldHash of the main file is in `chunk.renderedHash`. But some plugins add a
-                // second "main" file to the chunk (for example, `mini-css-extract-plugin` adds a
-                // css file). That other main file has to be rehashed too, but we don't know the
-                // oldHash of the file, so we don't know what string we have to replace by the new
-                // hash.
-                //
-                // However, the hash present in the file name must be one of the hashes of the
-                // modules inside the chunk (modules[].renderedHash). So we try to replace each
-                // module hash with the new hash.
-                const module = Array.from(chunk.modulesIterable)
-                    .find(m => oldChunkName.includes(m.renderedHash));
+            // Keep the chunk hashes in sync
+            chunk.hash = fullHash;
+            chunk.renderedHash = newHash;
+        } else {
+            // This is a massive hack:
+            //
+            // The oldHash of the main file is in `chunk.renderedHash`. But some plugins add a
+            // second "main" file to the chunk (for example, `mini-css-extract-plugin` adds a
+            // css file). That other main file has to be rehashed too, but we don't know the
+            // oldHash of the file, so we don't know what string we have to replace by the new
+            // hash.
+            //
+            // However, the hash present in the file name must be one of the hashes of the
+            // modules inside the chunk (modules[].renderedHash). So we try to replace each
+            // module hash with the new hash.
+            const module = Array.from(chunk.modulesIterable).find(m =>
+                oldChunkName.includes(m.renderedHash)
+            );
 
-                // Can't find a module with this hash... not sure what is going on, just return and
-                // hope for the best.
-                if (!module) return;
+            // Can't find a module with this hash... not sure what is going on, just return and
+            // hope for the best.
+            if (!module) return;
 
-                // Save the hash map for replacing the secondary files
-                nameMap[module.renderedHash] = newHash;
-                newChunkName = oldChunkName.replace(module.renderedHash, newHash);
+            // Save the hash map for replacing the secondary files
+            nameMap[module.renderedHash] = newHash;
+            newChunkName = oldChunkName.replace(module.renderedHash, newHash);
 
-                // Keep the module hashes in sync
-                module.hash = fullHash;
-                module.renderedHash = newHash;
-            }
+            // Keep the module hashes in sync
+            module.hash = fullHash;
+            module.renderedHash = newHash;
+        }
 
-            // Change file name to include the new hash
-            chunk.files[index] = newChunkName;
-            asset._name = newChunkName;
-            delete assets[oldChunkName];
-            assets[newChunkName] = asset;
-        });
+        // Change file name to include the new hash
+        chunk.files[index] = newChunkName;
+        asset._name = newChunkName;
+        delete assets[oldChunkName];
+        assets[newChunkName] = asset;
+    });
 
     // Update the content of the rest of the files in the chunk
     chunk.files
         .filter(file => !isMainFile(file))
-        .forEach((file) => {
-            Object.keys(nameMap).forEach((old) => {
+        .forEach(file => {
+            Object.keys(nameMap).forEach(old => {
                 const newHash = nameMap[old];
                 replaceStringInAsset(assets[file], old, newHash);
             });
@@ -129,8 +127,8 @@ function reHashChunk(chunk, assets, hashFn, nameMap) {
  * collision and replace existing data.
  */
 function replaceOldHashForNewInChunkFiles(chunk, assets, oldHashToNewHashMap) {
-    chunk.files.forEach((file) => {
-        Object.keys(oldHashToNewHashMap).forEach((oldHash) => {
+    chunk.files.forEach(file => {
+        Object.keys(oldHashToNewHashMap).forEach(oldHash => {
             const newHash = oldHashToNewHashMap[oldHash];
             replaceStringInAsset(assets[file], oldHash, newHash);
         });
@@ -147,15 +145,11 @@ OutputHash.prototype.apply = function apply(compiler) {
     let hashFn;
 
     compiler.hooks.emit.tapAsync('OutputHash', (compilation, callback) => {
-        const {
-            outputOptions, chunks, assets,
-        } = compilation;
-        const {
-            hashFunction, hashDigest, hashDigestLength, hashSalt,
-        } = outputOptions;
+        const { outputOptions, chunks, assets } = compilation;
+        const { hashFunction, hashDigest, hashDigestLength, hashSalt } = outputOptions;
 
         // Reuses webpack options
-        hashFn = (input) => {
+        hashFn = input => {
             const hashObj = crypto.createHash(hashFunction).update(input);
             if (hashSalt) hashObj.update(hashSalt);
             const fullHash = hashObj.digest(hashDigest);
@@ -163,15 +157,15 @@ OutputHash.prototype.apply = function apply(compiler) {
         };
 
         const nameMap = {};
-        const sortedChunks = chunks.slice().sort(((aChunk, bChunk) => {
+        const sortedChunks = chunks.slice().sort((aChunk, bChunk) => {
             const aEntry = aChunk.hasRuntime();
             const bEntry = bChunk.hasRuntime();
             if (aEntry && !bEntry) return 1;
             if (!aEntry && bEntry) return -1;
             return sortChunksById(aChunk, bChunk);
-        }));
+        });
 
-        sortedChunks.forEach((chunk) => {
+        sortedChunks.forEach(chunk => {
             replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
             reHashChunk(chunk, assets, hashFn, nameMap);
         });
@@ -184,13 +178,15 @@ OutputHash.prototype.apply = function apply(compiler) {
             let err;
             Object.keys(compilation.assets)
                 .filter(assetName => assetName.match(this.validateOutputRegex))
-                .forEach((assetName) => {
+                .forEach(assetName => {
                     const asset = compilation.assets[assetName];
                     const path = asset.existsAt;
                     const assetContent = fs.readFileSync(path, 'utf8');
                     const { shortHash } = hashFn(assetContent);
                     if (!assetName.includes(shortHash)) {
-                        err = new Error(`The hash in ${assetName} does not match the hash of the content (${shortHash})`);
+                        err = new Error(
+                            `The hash in ${assetName} does not match the hash of the content (${shortHash})`
+                        );
                     }
                 });
             return callback(err);

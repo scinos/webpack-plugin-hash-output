@@ -1,11 +1,12 @@
 const OutputHash = require('../../src/OutputHash.js');
 const path = require('path');
+const baseConfig = require('../base.webpack.config');
 
-const rel = (paths => path.resolve(__dirname, ...paths));
+const rel = paths => path.resolve(__dirname, ...paths);
 
-module.exports = {
+module.exports = Object.assign({}, baseConfig, {
     devtool: 'sourcemap',
-    optimization: {
+    optimization: Object.assign({}, baseConfig.optimization, {
         splitChunks: {
             chunks: 'all',
             minChunks: 2,
@@ -16,17 +17,10 @@ module.exports = {
                 },
             },
         },
-    },
+    }),
     entry: {
         entry: rel`./entry.js`,
         vendor: rel`./vendor.js`,
     },
-    output: {
-        path: rel`../tmp`,
-        filename: '[name].[chunkhash].js',
-    },
-    plugins: [
-        new OutputHash(),
-    ],
-};
-
+    plugins: [new OutputHash()],
+});
