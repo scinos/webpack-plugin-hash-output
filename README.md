@@ -101,6 +101,37 @@ We can't fully support sourcemaps (i.e. recomute sourcemap hash) because the cir
 can't compute sourcemap hash without computing the file hash first, and we can't compute the file
 hash without the sourcemap hash.
 
+## Interaction with other plugins
+
+Because this plugin modifies the name of the assets, it break other plugins that also operate on the name of the assets
+if the order of the plugins is not correct. For `plugin-webpack-hash-output` to work, it has to be the first plugin to
+run in the `emit` phase. Inside the same phase, the order of the plugins is determined by the order in which they appear
+in webpack's config option `plugins`.
+
+A specific example of this is [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin): `plugin-webpack-hash-output`
+must be listed _before_ `html-webpack-plugin`. Example:
+
+```javascript
+plugins: [
+    new HashOutput(...),
+    new HtmlWebpackPlugin(...),
+]
+```
+
+When the webpack compilation starts, this plugin will check if there are other plugins that might conflict with the output and
+display a warning. It is recommended you fix the order of the plugins unless you really know what you are doing:
+
+```
+[WARNING] There are other plugins configured that might interfere with webpack-plugin-hash-output.
+For this plugin to work correctly, it should be the first plugin in the "emit" phase. Please
+be sure that the rest of the plugins run after webpack-plugin-hash-output (ensure they are listed
+after webpack-plugin-hash-output in the 'plugins' option in your webpack config).
+
+Plugins that could interfere with webpack-plugin-hash-output:
+ * HtmlWebpackPlugin
+```
+
+
 ## Options
 
 > Note: Use Webpack's own [hash output options](https://webpack.js.org/configuration/output/#output-hashfunction) to
@@ -129,14 +160,14 @@ module.exports = {
         filename: 'assets/[name].[chunkhash].js',
     },
     plugins: [
-        new HtmlWebpackPlugin({
-            filename: 'fragments/app.html',
-            chunks: ['main'],
-        }),
         new HashOutput({
             validateOutput: true,
             // Check that md5(assets/main.<hash>.js) === <hash>, but doesn't check fragments/app.html
             validateOutputRegex: /^assets\/.*\.js$/,
+        }),
+        new HtmlWebpackPlugin({
+            filename: 'fragments/app.html',
+            chunks: ['main'],
         }),
     ]
 };

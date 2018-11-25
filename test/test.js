@@ -4,6 +4,7 @@ const path = require('path');
 const { expect } = require('chai');
 const rimraf = require('rimraf');
 const fs = require('fs');
+const sinon = require('sinon');
 
 // Each compilation may use a different hash fn, so we need to generate one from the webpack
 // outputOptions.
@@ -82,6 +83,10 @@ describe('OutputHash', () => {
         if (fs.existsSync('./test/tmp')) {
             rimraf.sync('./test/tmp');
         }
+    });
+
+    afterEach(() => {
+        sinon.restore();
     });
 
     modes.forEach(mode => {
@@ -173,6 +178,13 @@ describe('OutputHash', () => {
                         expect(runtime.content).to.contain(asyncJs.hash);
                         expect(runtime.content).to.contain(asyncCss.hash);
                     }));
+
+            it('Shows a warning if it is not the first plugin in the emit phase', () => {
+                sinon.stub(console, 'warn');
+                return webpackCompile('html-wrong-order', mode).then(stats => {
+                    expect(console.warn.called).to.be.true;
+                });
+            });
         });
     });
 });

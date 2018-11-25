@@ -24,10 +24,13 @@
     "mocha": "^5.2.0",
     "prettier": "^1.15.2",
     "rimraf": "^2.6.2",
+    "sinon": "^7.1.1",
     "webpack": "^4.26.0",
     "webpack-cli": "^3.1.2"
   },
-  "dependencies": {},
+  "dependencies": {
+    "outdent": "^0.7.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/scinos/webpack-plugin-hash-output"

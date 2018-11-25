@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added LICENSE.txt, CODE_OF_CONDUCT.md
 - Added .npmignore to reduce the package size
 
-## 3.1.3 - 2018-11-23
+## 3.1.2 - 2018-11-23
 
 - Burnt version, ignore
 

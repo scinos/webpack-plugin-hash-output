@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const fs = require('fs');
+const outdent = require('outdent');
 
 function OutputHash({ validateOutput = false, validateOutputRegex = /^.*$/ } = {}) {
     this.validateOutput = validateOutput;
@@ -143,6 +144,29 @@ function sortChunksById(a, b) {
 
 OutputHash.prototype.apply = function apply(compiler) {
     let hashFn;
+
+    compiler.hooks.afterPlugins.tap('OutputHash', (compiler, callback) => {
+        if (
+            compiler.hooks.emit.taps.length > 1 &&
+            compiler.hooks.emit.taps[0].name !== 'OutputHash'
+        ) {
+            debugger;
+            const plugins = compiler.hooks.emit.taps
+                .filter(plugin => plugin.name != 'OutputHash')
+                .map(plugin => ` * ${plugin.name}`)
+                .join('\n');
+
+            console.warn(outdent`
+                [WARNING] There are other plugins configured that might interfere with webpack-plugin-hash-output.
+                For this plugin to work correctly, it should be the first plugin in the "emit" phase. Please
+                be sure that the rest of the plugins run after webpack-plugin-hash-output (ensure they are listed
+                after webpack-plugin-hash-output in the 'plugins' option in your webpack config).
+
+                Plugins that could interfere with webpack-plugin-hash-output:
+                ${plugins}
+                `);
+        }
+    });
 
     compiler.hooks.emit.tapAsync('OutputHash', (compilation, callback) => {
         const { outputOptions, chunks, assets } = compilation;
