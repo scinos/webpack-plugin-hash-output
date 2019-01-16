@@ -58,8 +58,7 @@ function reHashChunk(chunk, assets, hashFn, nameMap) {
     const isMainFile = file => file.endsWith('.js') || file.endsWith('.css');
 
     // Update the name of the main files
-    chunk.files.filter(isMainFile).forEach((file, index) => {
-        const oldChunkName = chunk.files[index];
+    chunk.files.filter(isMainFile).forEach((oldChunkName, index) => {
         const asset = assets[oldChunkName];
         const { fullHash, shortHash: newHash } = hashFn(asset.source());
 
