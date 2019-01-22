@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 3.2.1 - 2019-01-23
+
+### Fixes
+
+- Fixed a potential bug while searching for the main file in a chunk (thanks @liamcmitchell-sc)
+
+### Added
+
+- Display a warning if there are other pluging registered to run in the `emit` phase
+  and we are not the first in the list.
+
 ## 3.2.0 - 2018-11-25
 
 ### Added
