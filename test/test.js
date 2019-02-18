@@ -14,6 +14,9 @@ const makeHashFn = ({
     hashDigestLength = 20,
     hashSalt = null,
 } = {}) => input => {
+    // generate hash of content without sourcemap
+    const mapCommentReg = /\s\/[\/|*]#\s?sourceMappingURL=.*.map(\s\*\/)?/g;
+    input = input.replace(mapCommentReg, '');
     const hashObj = crypto.createHash(hashFunction).update(input);
     if (hashSalt) hashObj.update(hashSalt);
     const fullHash = hashObj.digest(hashDigest);
