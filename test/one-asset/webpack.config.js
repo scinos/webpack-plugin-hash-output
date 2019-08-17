@@ -6,5 +6,5 @@ const rel = paths => path.resolve(__dirname, ...paths);
 
 module.exports = Object.assign({}, baseConfig, {
     entry: rel`./entry.js`,
-    plugins: [new OutputHash()],
+    plugins: [new OutputHash({ validateOutput: true })],
 });

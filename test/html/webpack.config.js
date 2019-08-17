@@ -13,6 +13,7 @@ module.exports = Object.assign({}, baseConfig, {
     plugins: [
         new OutputHash(),
         new HtmlWebpackPlugin({
+            cache: false,
             filename: 'index.html',
             chunks: ['vendor', 'entry'],
         }),

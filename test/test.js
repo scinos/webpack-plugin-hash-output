@@ -6,6 +6,9 @@ const rimraf = require('rimraf');
 const fs = require('fs');
 const sinon = require('sinon');
 
+const OUTPUT_PATH = './test/tmp';
+const getAssetFromFile = filename => fs.readFileSync(path.join(OUTPUT_PATH, filename), 'utf8');
+
 // Each compilation may use a different hash fn, so we need to generate one from the webpack
 // outputOptions.
 const makeHashFn = ({
@@ -28,8 +31,7 @@ const expectAssetNameToContainContentHash = stats => {
     Object.keys(assets)
         .filter(file => !isSecondaryFile(file))
         .forEach(name => {
-            const asset = assets[name];
-            const { shortHash } = hashFn(asset.source());
+            const { shortHash } = hashFn(getAssetFromFile(name));
             expect(name).to.contain(shortHash);
         });
 };
@@ -40,10 +42,10 @@ const expectSourcemapsToBeCorrect = stats => {
     Object.keys(assets)
         .filter(name => name.endsWith('.map'))
         .forEach(name => {
-            const content = assets[name];
-            const linkedFile = JSON.parse(content.source()).file;
+            const content = getAssetFromFile(name);
+            const linkedFile = JSON.parse(content).file;
             expect(Object.keys(assets)).to.include(linkedFile);
-            expect(assets[linkedFile].source()).to.have.string(name);
+            expect(getAssetFromFile(linkedFile)).to.have.string(name);
         });
 };
 
@@ -66,22 +68,26 @@ const webpackCompile = (fixture, mode, customConfig = config => config) =>
     });
 
 const asset = (stats, name, ext = '.js') => {
-    const assetName = Object.keys(stats.compilation.assets).find(
-        n => n.startsWith(name) && n.endsWith(ext)
-    );
-    const content = stats.compilation.assets[assetName];
-    return {
-        hash: assetName.split('.')[1], // By convention the names are <name>.<hash>.<extension>
-        content: content.source(),
-    };
+    const { assets } = stats.compilation;
+    let assetName = Object.keys(assets).find(n => n.startsWith(name) && n.endsWith(ext));
+    try {
+        const content = getAssetFromFile(assetName);
+        return {
+            hash: assetName.split('.')[1], // By convention the names are <name>.<hash>.<extension>
+            content,
+        };
+    } catch (err) {
+        console.error(err);
+    }
 };
 
 describe('OutputHash', () => {
     const modes = ['development', 'production'];
+    const futureEmitAssets = [true, false];
 
     before(() => {
-        if (fs.existsSync('./test/tmp')) {
-            rimraf.sync('./test/tmp');
+        if (fs.existsSync(OUTPUT_PATH)) {
+            rimraf.sync(OUTPUT_PATH);
         }
     });
 
@@ -91,7 +97,7 @@ describe('OutputHash', () => {
 
     modes.forEach(mode => {
         context(`In ${mode} mode`, () => {
-            [true, false].forEach(withFutureEmitAssets => {
+            futureEmitAssets.forEach(withFutureEmitAssets => {
                 context(`With futureEmitAssets ${withFutureEmitAssets}`, () => {
                     const setFutureEmitAssets = config => {
                         config.output.futureEmitAssets = withFutureEmitAssets;

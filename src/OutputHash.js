@@ -198,12 +198,24 @@ OutputHash.prototype.apply = function apply(compiler) {
 
     if (this.validateOutput) {
         compiler.hooks.afterEmit.tapAsync('Validate output', (compilation, callback) => {
+            const outputPath = compilation.getPath(compiler.outputPath);
             let err;
             Object.keys(compilation.assets)
                 .filter(assetName => assetName.match(this.validateOutputRegex))
                 .forEach(assetName => {
-                    const asset = compilation.assets[assetName];
-                    const path = asset.existsAt;
+                    // With `futureEmitAssets` mode in Webpack 4 (or the default behaviour in Webpack 5) we lose
+                    // the `asset.existsAt` property as the asset is replaced with `SizeOnlySource` to allow GC of
+                    // the asset.
+                    //
+                    // This logic mirrors how Webpack determines the filename to write to internally so we can find the
+                    // file again.
+                    let targetFile = assetName;
+                    const queryStringIdx = targetFile.indexOf('?');
+                    if (queryStringIdx >= 0) {
+                        targetFile = targetFile.substr(0, queryStringIdx);
+                    }
+                    const path = compiler.outputFileSystem.join(outputPath, targetFile);
+
                     const assetContent = fs.readFileSync(path, 'utf8');
                     const { shortHash } = hashFn(assetContent);
                     if (!assetName.includes(shortHash)) {
