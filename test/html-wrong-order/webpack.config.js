@@ -12,6 +12,7 @@ module.exports = Object.assign({}, baseConfig, {
     },
     plugins: [
         new HtmlWebpackPlugin({
+            cache: false,
             filename: 'index.html',
             chunks: ['vendor', 'entry'],
         }),
