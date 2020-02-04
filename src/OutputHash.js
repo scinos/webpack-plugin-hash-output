@@ -2,9 +2,15 @@ const crypto = require('crypto');
 const fs = require('fs');
 const outdent = require('outdent');
 
-function OutputHash({ validateOutput = false, validateOutputRegex = /^.*$/ } = {}) {
+function OutputHash({
+    validateOutput = false,
+    validateOutputRegex = /^.*$/,
+    replacementFilterRegex = null,
+} = {}) {
     this.validateOutput = validateOutput;
     this.validateOutputRegex = validateOutputRegex;
+    this.replacementFilterEnabled = replacementFilterRegex !== null;
+    this.replacementFilterRegex = replacementFilterRegex || /^.*$/;
 }
 
 /**
@@ -48,13 +54,40 @@ function replaceStringInAsset(asset, source, target) {
     );
 }
 
+/* matches contents of asset against a regex */
+function assetContainsRegex(asset, regex) {
+    if (typeof asset === 'string') {
+        return asset.match(regex);
+    }
+
+    // ReplaceSource
+    if ('_source' in asset) {
+        return assetContainsRegex(asset._source, regex);
+    }
+
+    if (typeof asset.source === 'function') {
+        return asset.source().match(regex);
+    }
+
+    // ConcatSource
+    if ('children' in asset) {
+        return asset.children.some(child => assetContainsRegex(child, regex));
+    }
+
+    throw new Error(
+        `Unknown asset type (${asset.constructor.name})!. ` +
+            'Unfortunately this type of asset is not supported yet. ' +
+            'Please raise an issue and we will look into it asap'
+    );
+}
+
 /**
  * Computes the new hash of a chunk.
  *
  * This function updates the *name* of the main file (i.e. source code), and the *content* of the
  * secondary files (i.e source maps)
  */
-function reHashChunk(chunk, assets, hashFn, nameMap) {
+function reHashChunk(chunk, assets, hashFn, nameMap, replacementFilterRegex) {
     const isMainFile = file => file.endsWith('.js') || file.endsWith('.css');
 
     // Update the name of the main files
@@ -110,7 +143,7 @@ function reHashChunk(chunk, assets, hashFn, nameMap) {
 
     // Update the content of the rest of the files in the chunk
     chunk.files
-        .filter(file => !isMainFile(file))
+        .filter(file => !isMainFile(file) && file.match(replacementFilterRegex))
         .forEach(file => {
             Object.keys(nameMap).forEach(old => {
                 const newHash = nameMap[old];
@@ -126,13 +159,20 @@ function reHashChunk(chunk, assets, hashFn, nameMap) {
  * for new ones. We assume hashes are unique enough, so that we don't accidentally hit a
  * collision and replace existing data.
  */
-function replaceOldHashForNewInChunkFiles(chunk, assets, oldHashToNewHashMap) {
-    chunk.files.forEach(file => {
-        Object.keys(oldHashToNewHashMap).forEach(oldHash => {
-            const newHash = oldHashToNewHashMap[oldHash];
-            replaceStringInAsset(assets[file], oldHash, newHash);
+function replaceOldHashForNewInChunkFiles(
+    chunk,
+    assets,
+    oldHashToNewHashMap,
+    replacementFilterRegex
+) {
+    chunk.files
+        .filter(file => file.match(replacementFilterRegex))
+        .forEach(file => {
+            Object.keys(oldHashToNewHashMap).forEach(oldHash => {
+                const newHash = oldHashToNewHashMap[oldHash];
+                replaceStringInAsset(assets[file], oldHash, newHash);
+            });
         });
-    });
 }
 
 function sortChunksById(a, b) {
@@ -189,9 +229,33 @@ OutputHash.prototype.apply = function apply(compiler) {
         });
 
         sortedChunks.forEach(chunk => {
-            replaceOldHashForNewInChunkFiles(chunk, assets, nameMap);
-            reHashChunk(chunk, assets, hashFn, nameMap);
+            replaceOldHashForNewInChunkFiles(chunk, assets, nameMap, this.replacementFilterRegex);
+            reHashChunk(chunk, assets, hashFn, nameMap, this.replacementFilterRegex);
         });
+
+        // if we are only replacing hashes in some files, we execute a safety net to ensure
+        // that we haven't missed any files that might contain hashes
+        if (this.replacementFilterEnabled) {
+            const oldHashes = Object.keys(nameMap).filter(
+                hash => !Object.values(nameMap).includes(hash)
+            );
+            const regex = new RegExp(`(${oldHashes.join('|')})`, 'g');
+
+            const filesWithOldHashes = sortedChunks.reduce(
+                (acc, chunk) =>
+                    acc.concat(chunk.files.filter(file => assetContainsRegex(assets[file], regex))),
+                []
+            );
+
+            if (filesWithOldHashes.length > 0) {
+                callback(
+                    new Error(
+                        `Some files still had the old hashes:\n${filesWithOldHashes.join('\n')}`
+                    )
+                );
+                return;
+            }
+        }
 
         callback();
     });

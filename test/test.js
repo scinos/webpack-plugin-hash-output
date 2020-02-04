@@ -185,6 +185,18 @@ describe('OutputHash', () => {
                     expect(console.warn.called).to.be.true;
                 });
             });
+
+            it('Works when only replacing hashes in manifest files', () => {
+                webpackCompile('partial-replacement', mode).then(sanityCheck);
+            });
+
+            it('Safety net works when only missing hashes with partial replacement', () =>
+                webpackCompile('partial-replacement-with-error', mode)
+                    .then(() => expect.fail('Did not expect compilation to pass'))
+                    .catch(err => {
+                        expect(err.message).to.include('Some files still had the old hashes');
+                        expect(err.message).to.include('manifest.');
+                    }));
         });
     });
 });
