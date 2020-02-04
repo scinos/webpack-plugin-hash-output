@@ -7,25 +7,30 @@ Plugin to replace webpack chunkhash with an md5 hash of the final file conent.
 ## Installation
 
 With npm
+
 ```
 npm install webpack-plugin-hash-output --save-dev
 ```
 
 With yarn
+
 ```
 yarn add webpack-plugin-hash-output --dev
 ```
 
 ## Why?
 
-There are other webpack plugins for hashing out there. But when they run, they don't "see" the final form of the code, because they run
-*before* plugins like `webpack.optimize.UglifyJsPlugin`. In other words, if you change `webpack.optimize.UglifyJsPlugin` config, your
-hashes won't change, creating potential conflicts with cached resources.
+There are other webpack plugins for hashing out there. But when they run, they don't "see" the final
+form of the code, because they run _before_ plugins like `webpack.optimize.UglifyJsPlugin`. In other
+words, if you change `webpack.optimize.UglifyJsPlugin` config, your hashes won't change, creating
+potential conflicts with cached resources.
 
-The main difference is that `webpack-plugin-hash-output` runs in the last compilation step. So any change in webpack or any other plugin
-that actually changes the output, will be "seen" by this plugin, and therefore that change will be reflected in the hash.
+The main difference is that `webpack-plugin-hash-output` runs in the last compilation step. So any
+change in webpack or any other plugin that actually changes the output, will be "seen" by this
+plugin, and therefore that change will be reflected in the hash.
 
-It will generate files like `entry.<hash>.js`, where `<hash>` is always a hash of the content (well, a subset of). Example:
+It will generate files like `entry.<hash>.js`, where `<hash>` is always a hash of the content (well,
+a subset of). Example:
 
 ```
 $ md5 entry.32f1718dd08eccda2791.js
@@ -33,7 +38,8 @@ $ md5 entry.32f1718dd08eccda2791.js
 MD5 (entry.32f1718dd08eccda2791.js) = 32f1718dd08eccda2791ff7ed466bd98
 ```
 
-All other assets (common files, manifest files, HTML output...) will use the new md5 hash to reference the asset.
+All other assets (common files, manifest files, HTML output...) will use the new md5 hash to
+reference the asset.
 
 ## Compatibility
 
@@ -53,9 +59,7 @@ module.exports = {
         //...
         filename: '[name].[chunkhash].js',
     },
-    plugins: [
-        new HashOutput(options)
-    ]
+    plugins: [new HashOutput(options)],
 };
 ```
 
@@ -66,6 +70,7 @@ of the chunk in the chunks's sourcemap, but it won't recompute the name of the h
 the side effect that the name of the sourcemap will differ from the name of the chunk. Example:
 
 Before:
+
 ```javascript
 // app.<oldhash>.js
 
@@ -82,6 +87,7 @@ Before:
 ```
 
 After:
+
 ```javascript
 // app.<newhash>.js
 
@@ -103,12 +109,13 @@ hash without the sourcemap hash.
 
 ## Interaction with other plugins
 
-Because this plugin modifies the name of the assets, it break other plugins that also operate on the name of the assets
-if the order of the plugins is not correct. For `plugin-webpack-hash-output` to work, it has to be the first plugin to
-run in the `emit` phase. Inside the same phase, the order of the plugins is determined by the order in which they appear
-in webpack's config option `plugins`.
+Because this plugin modifies the name of the assets, it break other plugins that also operate on the
+name of the assets if the order of the plugins is not correct. For `plugin-webpack-hash-output` to
+work, it has to be the first plugin to run in the `emit` phase. Inside the same phase, the order of
+the plugins is determined by the order in which they appear in webpack's config option `plugins`.
 
-A specific example of this is [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin): `plugin-webpack-hash-output`
+A specific example of this is
+[html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin): `plugin-webpack-hash-output`
 must be listed _before_ `html-webpack-plugin`. Example:
 
 ```javascript
@@ -118,8 +125,9 @@ plugins: [
 ]
 ```
 
-When the webpack compilation starts, this plugin will check if there are other plugins that might conflict with the output and
-display a warning. It is recommended you fix the order of the plugins unless you really know what you are doing:
+When the webpack compilation starts, this plugin will check if there are other plugins that might
+conflict with the output and display a warning. It is recommended you fix the order of the plugins
+unless you really know what you are doing:
 
 ```
 [WARNING] There are other plugins configured that might interfere with webpack-plugin-hash-output.
@@ -131,25 +139,25 @@ Plugins that could interfere with webpack-plugin-hash-output:
  * HtmlWebpackPlugin
 ```
 
-
 ## Options
 
-> Note: Use Webpack's own [hash output options](https://webpack.js.org/configuration/output/#output-hashfunction) to
-  configure hash function and length.
+> Note: Use Webpack's own
+> [hash output options](https://webpack.js.org/configuration/output/#output-hashfunction) to
+> configure hash function and length.
 
 ### `options.validateOutput`
 
 `boolean`, defaults to `false`.
 
-After webpack has compiled and generated all the assets, checks that the hash of the content is included in the file. If it is not, it will throw an error
-and the webpack process will fail.
-
+After webpack has compiled and generated all the assets, checks that the hash of the content is
+included in the file. If it is not, it will throw an error and the webpack process will fail.
 
 ### `options.validateOutputRegex`
+
 `regex`, defaults to `/^.*$/`
 
-When validating the output (see `options.validateOutput`), only evaluate hashes for files matching this regexp.
-Useful for skipping source maps or other output. Example:
+When validating the output (see `options.validateOutput`), only evaluate hashes for files matching
+this regexp. Useful for skipping source maps or other output. Example:
 
 ```javascript
 module.exports = {
@@ -169,10 +177,24 @@ module.exports = {
             filename: 'fragments/app.html',
             chunks: ['main'],
         }),
-    ]
+    ],
 };
 ```
 
+### `options.replacementFilterRegex`
+
+`regex`, defaults to `/^.*$`
+
+This is a performance optimisation. Normally for every chunk file the plugin will scan all other
+chunk files for the hash of that chunk and replace it. This can be particularly expensive for large
+compilations. If you are certain that hashes only exist in a particular subset of files you can
+limit the replacement to files matching a regex (for example, if you have a single runtime/manifest
+file the hashes are probably only in that file).
+
+As this is potentially dangerous, using this regex enables a safety net where at the end of the
+rehashing all the chunk files are scanned for any of the old hashes and the compilation will fail if
+any old hashes are found in any of the files. This likely indicates there are hashes in files you
+didn't expect, and you've missed them.@da
 
 ## Contributions
 
@@ -184,4 +206,5 @@ Tests can be run by:
 yarn test
 ```
 
-After running the tests, you might want to run `yarn run clean` to clean up temp files generated by the tests.
+After running the tests, you might want to run `yarn run clean` to clean up temp files generated by
+the tests.
